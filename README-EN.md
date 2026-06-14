@@ -6,6 +6,8 @@ A structural + Bayesian forecaster for the FIFA World Cup — and, just as impor
 **honest, rigorously-validated** account of *what actually improves* national-team match
 prediction.
 
+*This project is inspired by Joachim Klement's structural World Cup model.*
+
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![tests](https://img.shields.io/badge/tests-passing-brightgreen)
@@ -87,6 +89,31 @@ paired-bootstrap significance. Full ledger: [`docs/FINDINGS.md`](docs/FINDINGS.m
 **Bottom line:** simple/low-variance moves help; flexible/complex ones over-fit national-team
 data. The model is at the structural frontier — single-match World Cup outcomes are roughly
 half luck, and the market is hard to beat. That conclusion is the product.
+
+## Built on Klement's structural approach
+
+Joachim Klement's premise is that national-team strength is mostly *structural* — not star
+power, but slow-moving country variables, the tournament's own path, and a dose of luck. This
+project keeps exactly those inputs as a **leakage-safe structural prior** (the `independent`
+track), then lets match results refine it through partial pooling. Each factor his model looks
+at maps to a concrete term in `ratings.structural_index` / `simulate.py`:
+
+| Klement factor | How this project implements it |
+|---|---|
+| FIFA ranking | Standardized FIFA points as the current-strength **anchor**, frozen pre-tournament (blended with Transfermarkt squad value for 2026). |
+| Population | A `log10(population)` "talent-pool size" term plus a population × culture interaction — a big population helps only where football is actually followed. |
+| GDP per capita | `log10(GDP)` as an **inverted-U** (development helps, then flattens); the coefficient is reasoned, not fit. |
+| Football's role in society | A leakage-safe **culture** proxy: half past-World-Cup appearances, half long-run Elo. |
+| Climate & match environment | A mean-temperature **inverted-U** (penalty for leaving a temperate optimum) plus a host-nation boost. |
+| Group & knockout path | Monte-Carlo over the **official 2026 bracket** — the real draw: 12 groups → top two + 8 best third-placed teams (eligibility-respecting matching) → R32…final. |
+| A degree of randomness | Poisson goal noise each match, ≈⅓-strength extra time and penalty coin-flips in knockouts, and a fresh posterior draw per simulated tournament. |
+
+**Where it goes further.** That structural prior is the *shrinkage target* of a hierarchical
+Bayesian Poisson — data-rich teams move toward their results, data-poor teams stay near the
+prior — and a leakage-safe Elo plus squad value are added as extra anchors. Coefficients are
+set from prior reasoning, never fit on the ~36 rows of World-Cup-only history (which yields
+nonsense, e.g. a negative GDP coefficient). And every addition is checked out-of-sample with
+significance tests — see Honest findings above.
 
 ## How it works
 
