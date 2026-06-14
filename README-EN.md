@@ -8,6 +8,8 @@ prediction.
 
 *This project is inspired by Joachim Klement's structural World Cup model.*
 
+![Joachim Klement — correctly predicted the World Cup champion three times running: 2014 (Germany), 2018 (France), 2022 (Argentina)](joachim-klement.jpg)
+
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![tests](https://img.shields.io/badge/tests-passing-brightgreen)

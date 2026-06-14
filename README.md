@@ -7,6 +7,8 @@
 
 *本项目受 Joachim Klement 的结构化世界杯模型启发。*
 
+![Joachim Klement——连续三届精准预测世界杯冠军（2014 德国、2018 法国、2022 阿根廷）](joachim-klement.jpg)
+
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![tests](https://img.shields.io/badge/tests-passing-brightgreen)
