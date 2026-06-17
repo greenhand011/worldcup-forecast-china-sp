@@ -54,14 +54,16 @@ at the actual result's odds.
 | Austria–Jordan | 57/28/15 | 5700/2800/1500 | | | |
 | **Total (16 settled)** | | | | | **+48,836** |
 
-> ⚠️ Friendly reminder: 16 matches have been settled so far, and the profit is largely driven
+> ⚠️ Friendly reminder: the P&L below is a **single illustrative sample, not evidence of edge
+> over the market** — the real test is a planned closing-line-value (CLV) report (see
+> [#2](https://github.com/playmobil/worldcup-forecast/issues/2)). 16 matches have been settled
+> so far, and the profit is largely driven
 > by an unusually high draw rate — 8 draws out of 16 matches, far above the normal level of
 > roughly one quarter. Two major draw upsets alone — Spain vs Cape Verde @19.42 (+$23,009) and
 > Qatar vs Switzerland @8.00 (+$10,800) — account for about 70% of the total profit.
 >
 > Given the bookmaker margin of around 5.9%, the overall expected value of this strategy may
-> still be negative. Users are advised to integrate an LLM workflow to evaluate the final
-> decision before placing bets.
+> still be negative.
 
 ## What it does
 
