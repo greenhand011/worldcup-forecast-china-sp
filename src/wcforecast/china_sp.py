@@ -1,4 +1,4 @@
-"""China Sports Lottery SP review helpers.
+﻿"""China Sports Lottery SP review helpers.
 
 SP values are post-prediction review data only. They are never used as model inputs.
 The default staking layer is model-favorite based: every complete-SP match receives one flat simulated stake on the model's highest-probability outcome. SP remains post-prediction review data only.
@@ -22,66 +22,66 @@ from .teams import INDEX
 CSV_FIELDS = ("date", "home", "away", "neutral", "sp_home", "sp_draw", "sp_away", "actual")
 OPTIONAL_FIELDS = ("stage",)
 OUTCOMES = ("home", "draw", "away")
-OUTCOME_LABELS = {"home": "主胜", "draw": "平局", "away": "客胜"}
-BET_LABELS = {"home": "主胜下注", "draw": "平局下注", "away": "客胜下注"}
-OUTCOME_MARKERS = {"home": "主", "draw": "平", "away": "客"}
+OUTCOME_LABELS = {"home": "涓昏儨", "draw": "骞冲眬", "away": "瀹㈣儨"}
+BET_LABELS = {"home": "涓昏儨涓嬫敞", "draw": "骞冲眬涓嬫敞", "away": "瀹㈣儨涓嬫敞"}
+OUTCOME_MARKERS = {"home": "涓?, "draw": "骞?, "away": "瀹?}
 ACTUAL_TO_OUTCOME = {"H": "home", "D": "draw", "A": "away"}
-ACTUAL_LABELS = {"H": "主胜", "D": "平局", "A": "客胜", None: "待开奖"}
-DEFAULT_STAGE = "未标注赛段"
-TBD_NAMES = {"", "TBD", "待定", "待定球队", "未定", "To be decided"}
+ACTUAL_LABELS = {"H": "涓昏儨", "D": "骞冲眬", "A": "瀹㈣儨", None: "寰呭紑濂?}
+DEFAULT_STAGE = "鏈爣娉ㄨ禌娈?
+TBD_NAMES = {"", "TBD", "寰呭畾", "寰呭畾鐞冮槦", "鏈畾", "To be decided"}
 REPO_URL = "https://github.com/greenhand011/worldcup-forecast-china-sp"
 STRATEGIES = {"favorite-flat", "edge-flat", "prob-split", "kelly"}
 
 TEAM_ZH = {
-    "Algeria": "阿尔及利亚",
-    "Argentina": "阿根廷",
-    "Australia": "澳大利亚",
-    "Austria": "奥地利",
-    "Belgium": "比利时",
-    "Bosnia and Herzegovina": "波黑",
-    "Brazil": "巴西",
-    "Canada": "加拿大",
-    "Cape Verde": "佛得角",
-    "Colombia": "哥伦比亚",
-    "Croatia": "克罗地亚",
-    "Curaçao": "库拉索",
-    "Czech Republic": "捷克",
-    "DR Congo": "民主刚果",
-    "Ecuador": "厄瓜多尔",
-    "Egypt": "埃及",
-    "England": "英格兰",
-    "France": "法国",
-    "Germany": "德国",
-    "Ghana": "加纳",
-    "Haiti": "海地",
-    "Iran": "伊朗",
-    "Iraq": "伊拉克",
-    "Ivory Coast": "科特迪瓦",
-    "Japan": "日本",
-    "Jordan": "约旦",
-    "Mexico": "墨西哥",
-    "Morocco": "摩洛哥",
-    "Netherlands": "荷兰",
-    "New Zealand": "新西兰",
-    "Norway": "挪威",
-    "Panama": "巴拿马",
-    "Paraguay": "巴拉圭",
-    "Portugal": "葡萄牙",
-    "Qatar": "卡塔尔",
-    "Saudi Arabia": "沙特",
-    "Scotland": "苏格兰",
-    "Senegal": "塞内加尔",
-    "South Africa": "南非",
-    "South Korea": "韩国",
-    "Spain": "西班牙",
-    "Sweden": "瑞典",
-    "Switzerland": "瑞士",
-    "Tunisia": "突尼斯",
-    "Turkey": "土耳其",
-    "United States": "美国",
-    "Uruguay": "乌拉圭",
-    "Uzbekistan": "乌兹别克斯坦",
-    "TBD": "待定",
+    "Algeria": "闃垮皵鍙婂埄浜?,
+    "Argentina": "闃挎牴寤?,
+    "Australia": "婢冲ぇ鍒╀簹",
+    "Austria": "濂ュ湴鍒?,
+    "Belgium": "姣斿埄鏃?,
+    "Bosnia and Herzegovina": "娉㈤粦",
+    "Brazil": "宸磋タ",
+    "Canada": "鍔犳嬁澶?,
+    "Cape Verde": "浣涘緱瑙?,
+    "Colombia": "鍝ヤ鸡姣斾簹",
+    "Croatia": "鍏嬬綏鍦颁簹",
+    "Cura莽ao": "搴撴媺绱?,
+    "Czech Republic": "鎹峰厠",
+    "DR Congo": "姘戜富鍒氭灉",
+    "Ecuador": "鍘勭摐澶氬皵",
+    "Egypt": "鍩冨強",
+    "England": "鑻辨牸鍏?,
+    "France": "娉曞浗",
+    "Germany": "寰峰浗",
+    "Ghana": "鍔犵撼",
+    "Haiti": "娴峰湴",
+    "Iran": "浼婃湕",
+    "Iraq": "浼婃媺鍏?,
+    "Ivory Coast": "绉戠壒杩摝",
+    "Japan": "鏃ユ湰",
+    "Jordan": "绾︽棪",
+    "Mexico": "澧ㄨタ鍝?,
+    "Morocco": "鎽╂礇鍝?,
+    "Netherlands": "鑽峰叞",
+    "New Zealand": "鏂拌タ鍏?,
+    "Norway": "鎸▉",
+    "Panama": "宸存嬁椹?,
+    "Paraguay": "宸存媺鍦?,
+    "Portugal": "钁¤悇鐗?,
+    "Qatar": "鍗″灏?,
+    "Saudi Arabia": "娌欑壒",
+    "Scotland": "鑻忔牸鍏?,
+    "Senegal": "濉炲唴鍔犲皵",
+    "South Africa": "鍗楅潪",
+    "South Korea": "闊╁浗",
+    "Spain": "瑗跨彮鐗?,
+    "Sweden": "鐟炲吀",
+    "Switzerland": "鐟炲＋",
+    "Tunisia": "绐佸凹鏂?,
+    "Turkey": "鍦熻€冲叾",
+    "United States": "缇庡浗",
+    "Uruguay": "涔屾媺鍦?,
+    "Uzbekistan": "涔屽吂鍒厠鏂潶",
+    "TBD": "寰呭畾",
 }
 
 
@@ -168,10 +168,10 @@ def allocate_model_favorite(
         raise ValueError("stake must be positive")
     edge_text = ""
     if edge is not None and edge.get(favorite) is not None:
-        edge_text = f"，edge {_fmt_edge(float(edge[favorite]))}"
+        edge_text = f"锛宔dge {_fmt_edge(float(edge[favorite]))}"
     return {outcome: stake if outcome == favorite else 0 for outcome in OUTCOMES}, favorite, (
-        f"favorite-flat：买入模型第一选择{OUTCOME_LABELS[favorite]}，"
-        f"模型概率 {_fmt_pct(float(probabilities[favorite]))}{edge_text}"
+        f"favorite-flat锛氫拱鍏ユā鍨嬬涓€閫夋嫨{OUTCOME_LABELS[favorite]}锛?
+        f"妯″瀷姒傜巼 {_fmt_pct(float(probabilities[favorite]))}{edge_text}"
     )
 
 
@@ -202,33 +202,33 @@ def allocate_best_edge(
         raise ValueError("bankroll must be at least one unit")
 
     if any(edge.get(outcome) is None for outcome in OUTCOMES):
-        return _zero_allocation(), None, "待录入SP"
+        return _zero_allocation(), None, "寰呭綍鍏P"
 
     best = max(OUTCOMES, key=lambda outcome: float(edge[outcome]))
     best_edge = float(edge[best])
     if best_edge <= float(min_edge):
-        return _zero_allocation(), None, f"无正edge，观望（最佳 {OUTCOME_LABELS[best]} {_fmt_edge(best_edge)}）"
+        return _zero_allocation(), None, f"鏃犳edge锛岃鏈涳紙鏈€浣?{OUTCOME_LABELS[best]} {_fmt_edge(best_edge)}锛?
 
     if probabilities is not None:
         model_favorite = max(OUTCOMES, key=lambda outcome: float(probabilities[outcome]))
         best_probability = float(probabilities[best])
         if require_model_favorite and best != model_favorite:
             return _zero_allocation(), None, (
-                f"观望：最佳edge为{OUTCOME_LABELS[best]} {_fmt_edge(best_edge)}，"
-                f"但模型第一选择是{OUTCOME_LABELS[model_favorite]}"
+                f"瑙傛湜锛氭渶浣砮dge涓簕OUTCOME_LABELS[best]} {_fmt_edge(best_edge)}锛?
+                f"浣嗘ā鍨嬬涓€閫夋嫨鏄瘂OUTCOME_LABELS[model_favorite]}"
             )
         if best_probability < float(min_probability):
             return _zero_allocation(), None, (
-                f"观望：{OUTCOME_LABELS[best]} edge {_fmt_edge(best_edge)}，"
-                f"但模型概率仅 {_fmt_pct(best_probability)}，低于稳健阈值 {_fmt_pct(min_probability)}"
+                f"瑙傛湜锛歿OUTCOME_LABELS[best]} edge {_fmt_edge(best_edge)}锛?
+                f"浣嗘ā鍨嬫鐜囦粎 {_fmt_pct(best_probability)}锛屼綆浜庣ǔ鍋ラ槇鍊?{_fmt_pct(min_probability)}"
             )
 
     stake = _round_to_unit(bankroll, unit)
     stake = min(stake, bankroll)
     if stake <= 0:
-        return _zero_allocation(), None, "edge过阈值但下注额低于最小单位，观望"
+        return _zero_allocation(), None, "edge杩囬槇鍊间絾涓嬫敞棰濅綆浜庢渶灏忓崟浣嶏紝瑙傛湜"
     return {outcome: stake if outcome == best else 0 for outcome in OUTCOMES}, best, (
-        f"edge-flat：买入{OUTCOME_LABELS[best]}，edge {_fmt_edge(best_edge)}"
+        f"edge-flat锛氫拱鍏OUTCOME_LABELS[best]}锛宔dge {_fmt_edge(best_edge)}"
     )
 
 
@@ -253,7 +253,7 @@ def allocate_fractional_kelly(
     if max_stake_fraction <= 0:
         raise ValueError("max_stake_fraction must be positive")
     if any(sp.get(outcome) is None for outcome in OUTCOMES):
-        return _zero_allocation(), None, "待录入SP"
+        return _zero_allocation(), None, "寰呭綍鍏P"
 
     candidates = []
     for outcome in OUTCOMES:
@@ -271,16 +271,16 @@ def allocate_fractional_kelly(
     if not candidates:
         best = max(OUTCOMES, key=lambda outcome: float(probabilities[outcome]) * float(sp[outcome]) - 1.0)
         best_edge = float(probabilities[best]) * float(sp[best]) - 1.0
-        return _zero_allocation(), None, f"无正edge，观望（最佳 {OUTCOME_LABELS[best]} {_fmt_edge(best_edge)}）"
+        return _zero_allocation(), None, f"鏃犳edge锛岃鏈涳紙鏈€浣?{OUTCOME_LABELS[best]} {_fmt_edge(best_edge)}锛?
 
     edge, best, full_kelly = max(candidates, key=lambda item: item[0])
     raw_stake = bankroll * min(max_stake_fraction, kelly_fraction * full_kelly)
     stake = _round_to_unit(raw_stake, unit)
     stake = max(0, min(stake, bankroll))
     if stake <= 0:
-        return _zero_allocation(), None, "Kelly下注额低于最小单位，观望"
+        return _zero_allocation(), None, "Kelly涓嬫敞棰濅綆浜庢渶灏忓崟浣嶏紝瑙傛湜"
     return {outcome: stake if outcome == best else 0 for outcome in OUTCOMES}, best, (
-        f"kelly {kelly_fraction:g}x：买入{OUTCOME_LABELS[best]}，edge {_fmt_edge(edge)}，full Kelly {full_kelly * 100:.1f}%"
+        f"kelly {kelly_fraction:g}x锛氫拱鍏OUTCOME_LABELS[best]}锛宔dge {_fmt_edge(edge)}锛宖ull Kelly {full_kelly * 100:.1f}%"
     )
 
 
@@ -318,7 +318,7 @@ def review_match(
         edge = {outcome: None for outcome in OUTCOMES}
         allocation = _zero_allocation()
         selected_outcome = None
-        stake_status = "对阵待定"
+        stake_status = "瀵归樀寰呭畾"
     else:
         raw = model.match_probs(home, away, home_advantage=0.0 if neutral else 1.0)
         calibrated = np.asarray(calibrator(raw), dtype=float)
@@ -334,7 +334,7 @@ def review_match(
             if strategy == "prob-split":
                 allocation = allocate_bankroll(probabilities, bankroll=bankroll, unit=unit)
                 selected_outcome = max(OUTCOMES, key=lambda outcome: allocation[outcome])
-                stake_status = "概率拆分复盘（非推荐下注策略）"
+                stake_status = "姒傜巼鎷嗗垎澶嶇洏锛堥潪鎺ㄨ崘涓嬫敞绛栫暐锛?
             elif strategy == "kelly":
                 allocation, selected_outcome, stake_status = allocate_fractional_kelly(
                     probabilities,
@@ -363,7 +363,7 @@ def review_match(
         else:
             allocation = _zero_allocation()
             selected_outcome = None
-            stake_status = "待录入SP"
+            stake_status = "寰呭綍鍏P"
 
     stake_total = sum(allocation.values())
     actual = row.get("actual")
@@ -444,11 +444,11 @@ def build_review(
         )
         for row in rows
     ]
-    settled = [m for m in matches if m["status"] == "settled"]
+    settled = sorted([m for m in matches if m["status"] == "settled"], key=lambda m: _match_date(m) or date.min, reverse=True)
     raw_pending = [m for m in matches if m["status"] == "pending"]
-    today_pending = [m for m in raw_pending if _is_today_pending(m, review_date)]
-    awaiting_result = [m for m in raw_pending if _should_await_result(m, review_date)]
-    future_pending = [m for m in raw_pending if _is_future_pending(m, review_date)]
+    today_pending = sorted([m for m in raw_pending if _is_today_pending(m, review_date)], key=lambda m: _match_date(m) or date.min, reverse=True)
+    awaiting_result = sorted([m for m in raw_pending if _should_await_result(m, review_date)], key=lambda m: _match_date(m) or date.min, reverse=True)
+    future_pending = sorted([m for m in raw_pending if _is_future_pending(m, review_date)], key=lambda m: _match_date(m) or date.max)
     template_pending = [
         m for m in raw_pending
         if m not in today_pending and m not in awaiting_result and m not in future_pending
@@ -502,7 +502,7 @@ def build_review(
 
 
 def format_console_table(review: Mapping[str, object]) -> str:
-    headers = ["赛段", "对阵", "模型胜/平/负%", "体彩SP胜/平/负", "分配胜/平/负", "实际", "盈亏", "策略"]
+    headers = ["璧涙", "瀵归樀", "妯″瀷鑳?骞?璐?", "浣撳僵SP鑳?骞?璐?, "鍒嗛厤鑳?骞?璐?, "瀹為檯", "鐩堜簭", "绛栫暐"]
     rows = []
     for match in _main_display_matches(review):
         rows.append([
@@ -512,7 +512,7 @@ def format_console_table(review: Mapping[str, object]) -> str:
             _fmt_sp_triplet(match["sp"]),
             _fmt_alloc_triplet(match["allocation"]),
             match["actual_label"],
-            "待开奖" if match["pnl"] is None else _fmt_console_currency(match["pnl"]),
+            "寰呭紑濂? if match["pnl"] is None else _fmt_console_currency(match["pnl"]),
             match["stake_status"],
         ])
     widths = [max(_display_width(str(row[i])) for row in ([headers] + rows)) for i in range(len(headers))]
@@ -521,44 +521,44 @@ def format_console_table(review: Mapping[str, object]) -> str:
     body = ["  ".join(_pad(str(row[i]), widths[i]) for i in range(len(headers))) for row in rows]
     summary = review["summary"]
     footer = (
-        f"合计：策略 {review.get('strategy', 'favorite-flat')}，"
-        f"今日预测 {summary.get('today_pending_count', 0)} 场，"
-        f"今日实际下注 {_fmt_console_currency(summary.get('today_stake_total', 0))}，"
-        f"已下注结算 {summary.get('staked_settled_count', 0)}/{summary.get('settled_count', 0)}，"
-        f"完赛待补赛果 {summary.get('awaiting_result_count', 0)} 场，"
-        f"未来赛程 {summary.get('future_count', 0)} 场，"
-        f"累计盈亏 {_fmt_console_currency(summary['cumulative_pnl'])}"
+        f"鍚堣锛氱瓥鐣?{review.get('strategy', 'favorite-flat')}锛?
+        f"浠婃棩棰勬祴 {summary.get('today_pending_count', 0)} 鍦猴紝"
+        f"浠婃棩瀹為檯涓嬫敞 {_fmt_console_currency(summary.get('today_stake_total', 0))}锛?
+        f"宸蹭笅娉ㄧ粨绠?{summary.get('staked_settled_count', 0)}/{summary.get('settled_count', 0)}锛?
+        f"瀹岃禌寰呰ˉ璧涙灉 {summary.get('awaiting_result_count', 0)} 鍦猴紝"
+        f"鏈潵璧涚▼ {summary.get('future_count', 0)} 鍦猴紝"
+        f"绱鐩堜簭 {_fmt_console_currency(summary['cumulative_pnl'])}"
     )
-    return _console_safe("\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer]))
+    return _console_safe("\n".join(["涓浗浣撳僵 SP 涓栫晫鏉鐩?, "", line, sep, *body, "", footer]))
 
 
 def render_html(review: Mapping[str, object]) -> str:
     matches = list(review["matches"])
     today_pending = list(review.get("today_pending") or review.get("display_pending") or [])
-    awaiting_result = list(review.get("awaiting_result") or [])
-    future_pending = list(review.get("future_pending") or [])
+    awaiting_result = sorted(list(review.get("awaiting_result") or []), key=lambda m: _match_date(m) or date.min, reverse=True)
+    future_pending = sorted(list(review.get("future_pending") or []), key=lambda m: _match_date(m) or date.max)
     template_pending = list(review.get("template_pending") or [m for m in matches if m["status"] == "pending" and not _should_show_pending_card(m)])
-    settled = list(review.get("settled") or [m for m in matches if m["status"] == "settled"])
+    settled = sorted(list(review.get("settled") or [m for m in matches if m["status"] == "settled"]), key=lambda m: _match_date(m) or date.min, reverse=True)
     summary = review["summary"]
     hit_rate = summary.get("hit_rate")
     roi = summary.get("roi")
     history_stats = []
-    history_stats.append(f"已下注结算 {summary.get('staked_settled_count', 0)} / 已结算 {summary.get('settled_count', 0)}")
+    history_stats.append(f"宸蹭笅娉ㄧ粨绠?{summary.get('staked_settled_count', 0)} / 宸茬粨绠?{summary.get('settled_count', 0)}")
     if hit_rate is not None:
-        history_stats.append(f"盈利下注率 {_fmt_pct(float(hit_rate))}")
+        history_stats.append(f"鐩堝埄涓嬫敞鐜?{_fmt_pct(float(hit_rate))}")
     if roi is not None:
         history_stats.append(f"ROI {_fmt_pct(float(roi))}")
-    history_stats.append(f"累计盈亏 {_fmt_signed_currency(summary['cumulative_pnl'])}")
-    history_subtitle = "；".join(history_stats)
+    history_stats.append(f"绱鐩堜簭 {_fmt_signed_currency(summary['cumulative_pnl'])}")
+    history_subtitle = "锛?.join(history_stats)
     pnl_class = "positive" if float(summary["cumulative_pnl"]) >= 0 else "negative"
-    roi_text = "ROI —" if roi is None else f"ROI {_fmt_pct(float(roi))}"
+    roi_text = "ROI 鈥? if roi is None else f"ROI {_fmt_pct(float(roi))}"
 
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>中国体彩 SP 世界杯预测</title>
+  <title>涓浗浣撳僵 SP 涓栫晫鏉娴?/title>
   <style>
     :root {{ color-scheme: light; --bg:#f6f8fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#d9e0e8; --soft-line:#edf1f5; --blue:#2563eb; --blue-soft:#eff6ff; --green:#159957; --green-soft:#eaf8f0; --red:#dc2626; --red-soft:#fef2f2; --amber:#b45309; --amber-soft:#fff7ed; --shadow:0 10px 30px rgba(31,41,55,.08); }}
     * {{ box-sizing: border-box; }}
@@ -598,57 +598,51 @@ def render_html(review: Mapping[str, object]) -> str:
   <main>
     <header class="topbar">
       <div>
-        <h1>中国体彩 SP 世界杯预测</h1>
-        <p class="subtitle">基于独立模型概率 + 中国体彩胜平负 SP 的复盘页面；默认 favorite-flat：每场完整 SP 固定买入模型第一选择，不构成投注建议</p>
+        <h1>涓浗浣撳僵 SP 涓栫晫鏉娴?/h1>
+        <p class="subtitle">鍩轰簬鐙珛妯″瀷姒傜巼 + 涓浗浣撳僵鑳滃钩璐?SP 鐨勫鐩橀〉闈紱榛樿 favorite-flat锛氭瘡鍦哄畬鏁?SP 鍥哄畾涔板叆妯″瀷绗竴閫夋嫨锛屼笉鏋勬垚鎶曟敞寤鸿</p>
       </div>
       <a class="github-link" href="{REPO_URL}">GitHub</a>
     </header>
 
-    <section class="summary" aria-label="复盘汇总">
-      <div class="summary-item pnl {pnl_class}"><span>累计盈亏</span><strong>{_fmt_signed_currency(summary['cumulative_pnl'])}</strong><div class="summary-note">{roi_text}<br>已下注结算 {summary.get('staked_settled_count', 0)} / 已结算 {summary.get('settled_count', 0)}</div></div>
-      <div class="summary-item"><span>今日预测</span><strong>{summary.get('today_pending_count', summary.get('pending_count', 0))}</strong></div>
-      <div class="summary-item"><span>今日实际下注</span><strong>{_fmt_currency(summary.get('today_stake_total', 0))}</strong></div>
-      <div class="summary-item"><span>完赛待补赛果</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
-      <div class="summary-item"><span>已结算复盘</span><strong>{summary['settled_count']}</strong></div>
-      <div class="summary-item"><span>未来赛程</span><strong>{summary.get('future_count', 0)}</strong></div>
+    <section class="summary" aria-label="澶嶇洏姹囨€?>
+      <div class="summary-item pnl {pnl_class}"><span>绱鐩堜簭</span><strong>{_fmt_signed_currency(summary['cumulative_pnl'])}</strong><div class="summary-note">{roi_text}<br>宸蹭笅娉ㄧ粨绠?{summary.get('staked_settled_count', 0)} / 宸茬粨绠?{summary.get('settled_count', 0)}</div></div>
+      <div class="summary-item"><span>浠婃棩棰勬祴</span><strong>{summary.get('today_pending_count', summary.get('pending_count', 0))}</strong></div>
+      <div class="summary-item"><span>浠婃棩瀹為檯涓嬫敞</span><strong>{_fmt_currency(summary.get('today_stake_total', 0))}</strong></div>
+      <div class="summary-item"><span>瀹岃禌寰呰ˉ璧涙灉</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
+      <div class="summary-item"><span>宸茬粨绠楀鐩?/span><strong>{summary['settled_count']}</strong></div>
+      <div class="summary-item"><span>鏈潵璧涚▼</span><strong>{summary.get('future_count', 0)}</strong></div>
     </section>
 
     <div class="diagnosis">
-      复盘说明：模型先独立给出 90 分钟主胜/平局/客胜概率，SP 只在预测之后用于比较、edge 和盈亏复盘。
-      默认策略是 favorite-flat：每场完整 SP 固定用 100 元买入模型概率最高的一项；edge 仍然展示为赛后价值检查，但不让低概率高赔率冷门主导下注。
-      这样既满足每场必须模拟下注，也避免把 100 元拆到三项造成结构性亏损；模型层不使用 SP，避免用小样本反向调参造成过拟合。
-    </div>
+      澶嶇洏璇存槑锛氭ā鍨嬪厛鐙珛缁欏嚭 90 鍒嗛挓涓昏儨/骞冲眬/瀹㈣儨姒傜巼锛孲P 鍙湪棰勬祴涔嬪悗鐢ㄤ簬姣旇緝銆乪dge 鍜岀泩浜忓鐩樸€?      榛樿绛栫暐鏄?favorite-flat锛氭瘡鍦哄畬鏁?SP 鍥哄畾鐢?100 鍏冧拱鍏ユā鍨嬫鐜囨渶楂樼殑涓€椤癸紱edge 浠嶇劧灞曠ず涓鸿禌鍚庝环鍊兼鏌ワ紝浣嗕笉璁╀綆姒傜巼楂樿禂鐜囧喎闂ㄤ富瀵间笅娉ㄣ€?      杩欐牱鏃㈡弧瓒虫瘡鍦哄繀椤绘ā鎷熶笅娉紝涔熼伩鍏嶆妸 100 鍏冩媶鍒颁笁椤归€犳垚缁撴瀯鎬т簭鎹燂紱妯″瀷灞備笉浣跨敤 SP锛岄伩鍏嶇敤灏忔牱鏈弽鍚戣皟鍙傞€犳垚杩囨嫙鍚堛€?    </div>
 
     <section>
-      <div class="section-heading"><h2>今日预测 {len(today_pending)}</h2><span>date = today 且 actual 为空；每场完整 SP 默认买入模型第一选择</span></div>
-      {_render_card_grid(today_pending, empty_text="今日暂无已录入 SP 的待结算比赛。")}
+      <div class="section-heading"><h2>浠婃棩棰勬祴 {len(today_pending)}</h2><span>date = today 涓?actual 涓虹┖锛涙瘡鍦哄畬鏁?SP 榛樿涔板叆妯″瀷绗竴閫夋嫨</span></div>
+      {_render_card_grid(today_pending, empty_text="浠婃棩鏆傛棤宸插綍鍏?SP 鐨勫緟缁撶畻姣旇禌銆?)}
     </section>
 
     <section>
-      <div class="section-heading"><h2>历史复盘 {len(settled)}</h2><span>{_html_escape(history_subtitle)}</span></div>
-      {_render_card_grid(settled, empty_text="暂无已结算比赛。")}
+      <div class="section-heading"><h2>鍘嗗彶澶嶇洏 {len(settled)}</h2><span>{_html_escape(history_subtitle)}</span></div>
+      {_render_card_grid(settled, empty_text="鏆傛棤宸茬粨绠楁瘮璧涖€?)}
     </section>
 
     <section>
-      <div class="section-heading"><h2>完赛待补赛果 {len(awaiting_result)}</h2><span>date &lt; today 且 90 分钟 actual 尚未填写；补 H/D/A 后进入历史复盘并结算盈亏</span></div>
-      {_render_card_grid(awaiting_result, empty_text="暂无完赛待补赛果比赛。")}
+      <div class="section-heading"><h2>瀹岃禌寰呰ˉ璧涙灉 {len(awaiting_result)}</h2><span>date &lt; today 涓?90 鍒嗛挓 actual 灏氭湭濉啓锛涜ˉ H/D/A 鍚庤繘鍏ュ巻鍙插鐩樺苟缁撶畻鐩堜簭</span></div>
+      {_render_card_grid(awaiting_result, empty_text="鏆傛棤瀹岃禌寰呰ˉ璧涙灉姣旇禌銆?)}
     </section>
 
     <section>
-      <div class="section-heading"><h2>未来赛程 {len(future_pending)}</h2><span>date &gt; today 且 actual 为空；默认折叠，不计入今日实际下注</span></div>
-      {_render_collapsed_card_section(future_pending, empty_text="暂无已录入 SP 的未来赛程。", summary_text=f"展开查看 {len(future_pending)} 场未来赛程")}
+      <div class="section-heading"><h2>鏈潵璧涚▼ {len(future_pending)}</h2><span>date &gt; today 涓?actual 涓虹┖锛涢粯璁ゆ姌鍙狅紝涓嶈鍏ヤ粖鏃ュ疄闄呬笅娉?/span></div>
+      {_render_collapsed_card_section(future_pending, empty_text="鏆傛棤宸插綍鍏?SP 鐨勬湭鏉ヨ禌绋嬨€?, summary_text=f"灞曞紑鏌ョ湅 {len(future_pending)} 鍦烘湭鏉ヨ禌绋?)}
     </section>
 
     <section>
-      <div class="section-heading"><h2>待录入赛程模板 {len(template_pending)}</h2><span>未抓到或未录入 SP 的赛程统一折叠；公开 SP 行进入预测区</span></div>
+      <div class="section-heading"><h2>寰呭綍鍏ヨ禌绋嬫ā鏉?{len(template_pending)}</h2><span>鏈姄鍒版垨鏈綍鍏?SP 鐨勮禌绋嬬粺涓€鎶樺彔锛涘叕寮€ SP 琛岃繘鍏ラ娴嬪尯</span></div>
       {_render_template_section(template_pending)}
     </section>
 
     <footer class="disclaimer">
-      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 可由用户手动录入，也可从公开展示页导入后复核；空白 SP 表示待录入。
-      actual 必须使用 90 分钟含伤停补时、不含加时赛和点球的赛果。SP 和市场赔率只用于预测后的比较与复盘，不作为模型输入。
-      模型概率不是保证，历史盈亏不能证明长期存在 edge。
-    </footer>
+      鏈〉闈粎鐢ㄤ簬妯″瀷澶嶇洏鍜屽涔狅紝涓嶆瀯鎴愭姇娉ㄥ缓璁€備腑鍥戒綋褰?SP 鍙敱鐢ㄦ埛鎵嬪姩褰曞叆锛屼篃鍙粠鍏紑灞曠ず椤靛鍏ュ悗澶嶆牳锛涚┖鐧?SP 琛ㄧず寰呭綍鍏ャ€?      actual 蹇呴』浣跨敤 90 鍒嗛挓鍚激鍋滆ˉ鏃躲€佷笉鍚姞鏃惰禌鍜岀偣鐞冪殑璧涙灉銆係P 鍜屽競鍦鸿禂鐜囧彧鐢ㄤ簬棰勬祴鍚庣殑姣旇緝涓庡鐩橈紝涓嶄綔涓烘ā鍨嬭緭鍏ャ€?      妯″瀷姒傜巼涓嶆槸淇濊瘉锛屽巻鍙茬泩浜忎笉鑳借瘉鏄庨暱鏈熷瓨鍦?edge銆?    </footer>
   </main>
 </body>
 </html>
@@ -743,47 +737,47 @@ def _round_to_unit(value: float, unit: int) -> int:
 
 
 def _fmt_pct(value: float | None) -> str:
-    return "—" if value is None else f"{value * 100:.1f}%"
+    return "鈥? if value is None else f"{value * 100:.1f}%"
 
 
 def _fmt_edge(value: float | None) -> str:
     if value is None:
-        return "待录入SP"
+        return "寰呭綍鍏P"
     sign = "+" if value >= 0 else ""
     return f"{sign}{value * 100:.1f}%"
 
 
 def _fmt_currency(value: float | None) -> str:
-    return "—" if value is None else f"¥{int(round(value)):,.0f}"
+    return "鈥? if value is None else f"楼{int(round(value)):,.0f}"
 
 
 def _fmt_signed_currency(value: float | None) -> str:
     if value is None:
-        return "待开奖"
+        return "寰呭紑濂?
     value = 0.0 if abs(float(value)) < 0.05 else float(value)
     sign = "+" if value >= 0 else "-"
-    return f"{sign}¥{abs(value):,.1f}"
+    return f"{sign}楼{abs(value):,.1f}"
 
 
 def _fmt_console_currency(value: float | None) -> str:
     if value is None:
-        return "待开奖"
+        return "寰呭紑濂?
     value = 0.0 if abs(float(value)) < 0.05 else float(value)
     sign = "+" if value >= 0 else "-"
-    return f"{sign}{abs(value):,.1f} 元"
+    return f"{sign}{abs(value):,.1f} 鍏?
 
 
 def _fmt_sp(value: float | None) -> str:
-    return "待录入SP" if value is None else f"@{value:.2f}"
+    return "寰呭綍鍏P" if value is None else f"@{value:.2f}"
 
 
 def _fmt_odds(value: float | None) -> str:
-    return "—" if value is None else f"{value:.2f}"
+    return "鈥? if value is None else f"{value:.2f}"
 
 
 def _fmt_triplet(values: Mapping[str, float | None] | None, formatter: Callable[[float | None], str]) -> str:
     if values is None:
-        return "—/—/—"
+        return "鈥?鈥?鈥?
     return "/".join(formatter(values[outcome]) for outcome in OUTCOMES)
 
 
@@ -839,7 +833,7 @@ def _bet_side_label(match: Mapping[str, object], outcome: str) -> str:
         return str(match.get("home_zh") or _team_zh(str(match.get("home", ""))))
     if outcome == "away":
         return str(match.get("away_zh") or _team_zh(str(match.get("away", ""))))
-    return "平局"
+    return "骞冲眬"
 
 
 def _parse_review_date(value: str | date | None) -> date:
@@ -903,37 +897,37 @@ def _render_collapsed_card_section(matches: Iterable[Mapping[str, object]], empt
 def _render_template_section(matches: Iterable[Mapping[str, object]]) -> str:
     matches = list(matches)
     if not matches:
-        return '<div class="empty">暂无待录入模板。</div>'
+        return '<div class="empty">鏆傛棤寰呭綍鍏ユā鏉裤€?/div>'
     rows = "\n".join(_render_template_row(match) for match in matches)
-    return f'<details class="template-box"><summary>展开查看 {len(matches)} 场待录入模板</summary><div class="template-list">{rows}</div></details>'
+    return f'<details class="template-box"><summary>灞曞紑鏌ョ湅 {len(matches)} 鍦哄緟褰曞叆妯℃澘</summary><div class="template-list">{rows}</div></details>'
 
 
 def _render_template_row(match: Mapping[str, object]) -> str:
-    return f'<div class="template-row">{_html_escape(match["date"])} · {_html_escape(match["stage"])}<strong>{_html_escape(_match_title(match))}</strong></div>'
+    return f'<div class="template-row">{_html_escape(match["date"])} 路 {_html_escape(match["stage"])}<strong>{_html_escape(_match_title(match))}</strong></div>'
 
 
 def _render_card(match: Mapping[str, object]) -> str:
     if match["status"] == "pending":
         if match["unresolved"]:
-            status = '<span class="status waiting">对阵待定</span>'
-        elif match["stake_status"] == "待录入SP":
-            status = '<span class="status waiting">待录入SP</span>'
+            status = '<span class="status waiting">瀵归樀寰呭畾</span>'
+        elif match["stake_status"] == "寰呭綍鍏P":
+            status = '<span class="status waiting">寰呭綍鍏P</span>'
         elif match.get("needs_result"):
-            status = '<span class="status waiting">待赛果</span>'
+            status = '<span class="status waiting">寰呰禌鏋?/span>'
         elif int(match["stake_total"]) > 0 and match.get("is_today_pending"):
-            status = '<span class="status staked">今日已模拟下注</span>'
+            status = '<span class="status staked">浠婃棩宸叉ā鎷熶笅娉?/span>'
         elif match.get("is_today_pending"):
-            status = '<span class="status waiting">今日观望</span>'
+            status = '<span class="status waiting">浠婃棩瑙傛湜</span>'
         elif int(match["stake_total"]) > 0:
-            status = '<span class="status staked">待开奖</span>'
+            status = '<span class="status staked">寰呭紑濂?/span>'
         else:
-            status = '<span class="status waiting">观望</span>'
+            status = '<span class="status waiting">瑙傛湜</span>'
     else:
         if int(match["stake_total"]) <= 0:
-            status = f'<span class="status waiting">实际 {match["actual_label"]}，观望未下注</span>'
+            status = f'<span class="status waiting">瀹為檯 {match["actual_label"]}锛岃鏈涙湭涓嬫敞</span>'
         else:
             pnl = float(match["pnl"])
-            status = f'<span class="status {_value_class(pnl)}">实际 {match["actual_label"]} {_fmt_signed_currency(pnl)}</span>'
+            status = f'<span class="status {_value_class(pnl)}">瀹為檯 {match["actual_label"]} {_fmt_signed_currency(pnl)}</span>'
 
     return f"""
         <article class="match-card">
@@ -966,7 +960,7 @@ def _render_bet_column(match: Mapping[str, object], outcome: str) -> str:
         label = BET_LABELS[outcome]
         amount = _fmt_currency(match["allocation"][outcome])
     else:
-        label = f"{OUTCOME_LABELS[outcome]}概率"
+        label = f"{OUTCOME_LABELS[outcome]}姒傜巼"
         probs = match.get("probabilities")
         amount = _fmt_pct(None if probs is None else probs[outcome])
 
@@ -982,12 +976,12 @@ def _render_bet_column(match: Mapping[str, object], outcome: str) -> str:
 def _render_model_details(match: Mapping[str, object]) -> str:
     return f"""
           <details class="model-details">
-            <summary>查看模型细节</summary>
+            <summary>鏌ョ湅妯″瀷缁嗚妭</summary>
             <div class="detail-grid">
-              {_render_detail_row("模型概率", match["probabilities"], _fmt_pct)}
-              {_render_detail_row("公允赔率", match["fair_odds"], _fmt_odds)}
+              {_render_detail_row("妯″瀷姒傜巼", match["probabilities"], _fmt_pct)}
+              {_render_detail_row("鍏厑璧旂巼", match["fair_odds"], _fmt_odds)}
               {_render_detail_row("Edge", match["edge"], _fmt_edge, signed=True)}
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">{_html_escape(match["stake_status"])}</div></div>
+              <div class="detail-row"><div class="detail-label">绛栫暐</div><div class="detail-value" style="grid-column: span 3; text-align:left;">{_html_escape(match["stake_status"])}</div></div>
             </div>
           </details>"""
 
@@ -999,3 +993,4 @@ def _render_detail_row(label: str, values: Mapping[str, float | None] | None, fo
         cls = f" {_value_class(value)}" if signed and value is not None else ""
         cells.append(f'<div class="detail-value{cls}"><b>{OUTCOME_LABELS[outcome]}</b>{formatter(value)}</div>')
     return f'<div class="detail-row"><div class="detail-label">{label}</div>{"".join(cells)}</div>'
+
