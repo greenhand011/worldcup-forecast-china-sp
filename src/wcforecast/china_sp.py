@@ -114,13 +114,13 @@ def read_china_sp_csv(path: str | Path) -> list[dict]:
 
 def allocate_bankroll(
     probabilities: Mapping[str, float] | Sequence[float],
-    bankroll: int = 10000,
-    unit: int = 100,
+    bankroll: int = 100,
+    unit: int = 1,
 ) -> dict[str, int]:
     """Allocate ``bankroll`` across H/D/A by probability, rounded to ``unit``.
 
-    Kept for the README-style probability split demonstration and unit tests.
-    The China SP page uses :func:`allocate_best_edge` by default.
+    The China SP page uses this as its default review staking rule: every
+    match has the same total simulated bankroll, split by model probability.
     """
     bankroll = int(bankroll)
     unit = int(unit)
@@ -175,7 +175,7 @@ def review_match(
     row: Mapping[str, object],
     model,
     bankroll: int = 100,
-    unit: int = 100,
+    unit: int = 1,
     min_edge: float = 0.0,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
@@ -214,9 +214,14 @@ def review_match(
             outcome: None if sp[outcome] is None else probabilities[outcome] * float(sp[outcome]) - 1.0
             for outcome in OUTCOMES
         }
-        allocation, selected_outcome, stake_status = allocate_best_edge(
-            edge, bankroll=bankroll, unit=unit, min_edge=min_edge
-        )
+        if has_complete_sp:
+            allocation = allocate_bankroll(probabilities, bankroll=bankroll, unit=unit)
+            selected_outcome = max(OUTCOMES, key=lambda outcome: allocation[outcome])
+            stake_status = "按模型概率分配"
+        else:
+            allocation = _zero_allocation()
+            selected_outcome = None
+            stake_status = "待录入SP"
 
     stake_total = sum(allocation.values())
     actual = row.get("actual")
@@ -269,7 +274,7 @@ def build_review(
     input_path: str | Path,
     model,
     bankroll: int = 100,
-    unit: int = 100,
+    unit: int = 1,
     min_edge: float = 0.0,
     today: str | date | None = None,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
@@ -354,8 +359,7 @@ def format_console_table(review: Mapping[str, object]) -> str:
             _fmt_alloc_triplet(match["allocation"]),
             match["actual_label"],
             "待开奖" if match["pnl"] is None else _fmt_console_currency(match["pnl"]),
-            match["stake_status"] if match["selected_outcome"] is None
-            else f"{OUTCOME_LABELS[match['selected_outcome']]} {_edge_hint(match['edge'])}",
+            match["stake_status"],
         ])
 
     widths = [
@@ -370,7 +374,7 @@ def format_console_table(review: Mapping[str, object]) -> str:
         f"合计：共 {summary['match_count']} 场，已结算 {summary['settled_count']} 场，"
         f"未来预测 {summary['pending_count']} 场，待赛果复核 {summary.get('awaiting_result_count', 0)} 场，"
         f"对阵待定模板 {summary.get('template_count', 0)} 场，"
-        f"已模拟买入 {summary['staked_count']} 场，累计收益 {_fmt_console_currency(summary['cumulative_pnl'])}"
+        f"已模拟投入 {summary['staked_count']} 场，累计收益 {_fmt_console_currency(summary['cumulative_pnl'])}"
     )
     return _console_safe("\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer]))
 
@@ -779,7 +783,7 @@ def render_html(review: Mapping[str, object]) -> str:
     <header class="topbar">
       <div>
         <h1>中国体彩 SP 世界杯预测</h1>
-        <p class="subtitle">基于模型概率 + 用户手动录入中国体彩胜平负 SP 的复盘页面；每场最多模拟 100 元，不构成投注建议</p>
+        <p class="subtitle">基于独立模型概率 + 中国体彩胜平负 SP 的复盘页面；每场固定模拟 100 元并按模型概率拆分，不构成投注建议</p>
       </div>
       <a class="github-link" href="{REPO_URL}">GitHub</a>
     </header>
@@ -794,13 +798,13 @@ def render_html(review: Mapping[str, object]) -> str:
       <div class="summary-item"><span>未来预测</span><strong>{summary['pending_count']}</strong></div>
       <div class="summary-item"><span>待赛果复核</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
       <div class="summary-item"><span>对阵待定模板</span><strong>{summary.get('template_count', 0)}</strong></div>
-      <div class="summary-item"><span>已模拟买入</span><strong>{summary['staked_count']}</strong></div>{hit_rate_card}
+      <div class="summary-item"><span>已模拟投入</span><strong>{summary['staked_count']}</strong></div>{hit_rate_card}
     </section>
 
     <div class="diagnosis">
-      亏损诊断：旧页面亏损主要来自 demo SP/赛果不是官方中国体彩数据，以及“没有正 edge 也硬买”的策略偏差。
-      当前版本只在用户录入完整 SP 且最大 edge 高于阈值时模拟买入 100 元；当前阈值为 {_fmt_pct(float(review.get("min_edge", 0.0)))}。
-      否则标记为待录入或观望，避免为了少量样本调参而过拟合。
+      复盘说明：模型先独立给出 90 分钟主胜/平局/客胜概率，SP 只在预测之后用于比较、edge 和盈亏复盘。
+      当前版本每场完整 SP 比赛固定模拟 100 元，并按模型概率拆分到三项；缺少 SP 或缺少赛果时不结算盈亏。
+      历史复盘只使用已确认的 H/D/A 赛果，避免用少量未核实样本反向调参造成过拟合。
     </div>
 
     <section>
@@ -1164,7 +1168,7 @@ def _render_card(match: Mapping[str, object]) -> str:
 
 def _render_bet_column(match: Mapping[str, object], outcome: str) -> str:
     classes = []
-    if match["allocation"][outcome] > 0:
+    if match.get("selected_outcome") == outcome:
         classes.append("selected")
     if match["actual_outcome"] == outcome:
         classes.append("hit")

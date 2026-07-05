@@ -147,9 +147,9 @@ def main(argv=None):
     c.add_argument("--input", default="data/china_sp_review.csv")
     c.add_argument("--output", default="docs/china-sp-review.html")
     c.add_argument("--bankroll", type=int, default=100)
-    c.add_argument("--unit", type=int, default=100)
+    c.add_argument("--unit", type=int, default=1)
     c.add_argument("--min-edge", type=float, default=0.03,
-                   help="minimum edge required before simulating a 100-yuan review stake")
+                   help="legacy display option; review staking is split by model probability")
     c.set_defaults(func=cmd_china_sp_review)
 
     fetch = sub.add_parser("china-sp-fetch", help="fetch public China SP rows into the review CSV")

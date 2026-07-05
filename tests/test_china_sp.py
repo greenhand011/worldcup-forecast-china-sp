@@ -34,8 +34,8 @@ def review_for(actual):
 
 def test_probability_allocation_sums_to_bankroll():
     allocation = china_sp.allocate_bankroll({"home": 0.334, "draw": 0.333, "away": 0.333})
-    assert sum(allocation.values()) == 10000
-    assert all(amount % 100 == 0 for amount in allocation.values())
+    assert sum(allocation.values()) == 100
+    assert all(amount % 1 == 0 for amount in allocation.values())
 
 
 def test_best_edge_allocation_uses_one_flat_100_yuan_stake():
@@ -59,16 +59,16 @@ def test_best_edge_allocation_observes_when_edge_is_not_positive():
 @pytest.mark.parametrize(
     ("actual", "expected_pnl"),
     [
-        ("H", -100.0),
-        ("D", 300.0),
-        ("A", -100.0),
+        ("H", 0.0),
+        ("D", 20.0),
+        ("A", 0.0),
     ],
 )
 def test_pnl_for_each_actual_outcome(actual, expected_pnl):
     reviewed = review_for(actual)
-    assert reviewed["allocation"] == {"home": 0, "draw": 100, "away": 0}
+    assert reviewed["allocation"] == {"home": 50, "draw": 30, "away": 20}
     assert reviewed["stake_total"] == 100
-    assert reviewed["selected_outcome"] == "draw"
+    assert reviewed["selected_outcome"] == "home"
     assert reviewed["pnl"] == expected_pnl
 
 

@@ -25,24 +25,26 @@ The current version provides a 104-match 2026 World Cup template: 72 group-stage
 
 ## 亏损原因与修正 / Loss Diagnosis And Fix
 
-旧页面中的亏损来自演示 SP 和演示赛果，并不是真实中国体彩数据；同时旧策略会在每场比赛强制模拟买入 100 元，即使三项 edge 都不为正。这样的结果只能说明 demo 数据和策略层有偏差，不能用于反向调参。
+旧页面中的亏损来自演示 SP 和演示赛果，并不是真实中国体彩数据；同时旧策略会把 100 元只放到单一选项，容易把“复盘策略层”的偏差误读成模型本身的问题。这样的结果不能用于反向调参。
 
-The old page loss came from demo SP values and demo results, not official China Sports Lottery data. It also forced a simulated 100-yuan stake on every match even when no positive edge existed. That is a strategy-layer issue, not evidence for refitting the model.
+The old page loss came from demo SP values and demo results, not official China Sports Lottery data. The old review layer also put the full 100-yuan stake on a single outcome, which could confuse strategy-layer bias with model quality. It is not evidence for refitting the model.
 
 当前修正：
 
 - `data/china_sp_review.csv` 默认 SP 和赛果留空，明确只是手工录入模板，不再伪装成真实体彩数据。
-- 每场最多模拟 100 元。
-- 只有用户录入完整 SP 且最大 edge 大于 `--min-edge` 时，才把 100 元模拟放到 edge 最大的一项；CLI 默认阈值为 3%。
-- SP 缺失、对阵未定或没有正 edge 时，页面显示“待录入SP / 对阵待定 / 观望”，不产生亏损。
+- 每场完整 SP 比赛固定模拟 100 元。
+- 100 元按模型校准后的主胜/平局/客胜概率拆分，默认最小单位 1 元，三项合计始终等于 100 元。
+- SP 缺失、对阵未定或赛果未确认时，页面显示“待录入SP / 对阵待定 / 待赛果复核”，不结算盈亏。
+- Edge 只作为预测后比较指标，不作为模型输入，也不用于反向调参。
 - 不使用少量历史/demo 结果调模型参数，避免过拟合。
 
 Current fix:
 
 - `data/china_sp_review.csv` is a manual-entry template with blank SP and blank results by default.
-- Each match uses at most one simulated 100-yuan review stake.
-- A stake is simulated only when complete SP values are entered and the best edge is above `--min-edge`; the CLI default threshold is 3%.
-- Missing SP, unresolved matchups, or non-positive edge are shown as waiting/observing and do not create P&L.
+- Each complete-SP match uses a fixed simulated 100-yuan review bankroll.
+- The 100 yuan is split across home/draw/away by calibrated model probabilities; the default unit is 1 yuan and the three allocations always sum to 100 yuan.
+- Missing SP, unresolved matchups, or missing final results are shown as waiting/review-needed and do not create settled P&L.
+- Edge is a post-prediction comparison metric only; it is not a model input and is not used to refit parameters.
 - The model is not tuned on a tiny demo history, which helps avoid overfitting.
 
 ## 快速开始 / Quick Start
@@ -123,16 +125,16 @@ edge = probability * SP - 1
 pnl = stake_on_actual * sp_actual - total_stake
 ```
 
-默认命令每场最多模拟 `100` 元，最小单位 `100` 元，并要求至少 3% 正 edge：
+默认命令每场固定模拟 `100` 元，最小单位 `1` 元，并按模型概率拆分到主胜/平局/客胜：
 
 ```bash
-wcforecast china-sp-review --bankroll 100 --unit 100 --min-edge 0.03
+wcforecast china-sp-review --bankroll 100 --unit 1
 ```
 
-The default command uses at most one simulated `100` yuan stake per match and requires at least 3% positive edge:
+The default command uses a fixed simulated `100` yuan bankroll per match, split by model probability with a `1` yuan unit:
 
 ```bash
-wcforecast china-sp-review --bankroll 100 --unit 100 --min-edge 0.03
+wcforecast china-sp-review --bankroll 100 --unit 1
 ```
 
 ## 网页 / Pages
