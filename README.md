@@ -95,9 +95,10 @@ wcforecast china-sp-review
 
 页面展示逻辑 / Page sections:
 
-- `未来预测`: 已有 SP、尚未到比赛日或尚未开赛的比赛。 / Upcoming matches with SP.
-- `待赛果复核`: 已到比赛日、已有赛前 SP，但 90 分钟 `actual` 还没填的比赛。 / Matches with SP that need final 90-minute H/D/A confirmation.
-- `历史复盘`: `actual = H/D/A` 后自动结算盈亏；淘汰赛如果 90 分钟打平，哪怕加时或点球分出胜负，也应填 `D`。 / Settled review after `actual = H/D/A`; knockout matches tied after 90 minutes should be `D` even if extra time or penalties decide advancement.
+- `今日预测`: `date == today` 且 `actual` 为空的比赛；未开赛、正在踢、已完赛但未录入 90 分钟比分都在这里，也只有这些比赛计入“今日模拟投入”。 / Matches where `date == today` and `actual` is blank; only these count toward today's simulated stake.
+- `完赛待补赛果`: `date < today` 且 `actual` 为空的比赛；只表示缺少已核验的 90 分钟 H/D/A。 / Past matches without verified 90-minute H/D/A results.
+- `历史复盘`: `actual = H/D/A` 后自动结算盈亏、命中率和 ROI；淘汰赛如果 90 分钟打平，哪怕加时或点球分出胜负，也应填 `D`。 / Settled review after `actual = H/D/A`; knockout matches tied after 90 minutes should be `D` even if extra time or penalties decide advancement.
+- `未来赛程`: `date > today` 且 `actual` 为空的比赛；默认折叠，不计入今日模拟投入、完赛待补或历史复盘。 / Future matches are folded by default and excluded from today/history stats.
 - 页面队名使用中文展示，模型内部仍使用英文队名识别。 / Team names are displayed in Chinese while the model still uses English identifiers internally.
 
 ## CSV 数据格式 / CSV Format

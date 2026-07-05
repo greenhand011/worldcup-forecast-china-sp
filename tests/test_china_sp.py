@@ -147,15 +147,25 @@ def test_build_review_splits_pending_and_settled(tmp_path):
     path = tmp_path / "china_sp_review.csv"
     path.write_text(
         "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
-        "TBD,小组赛 A组 第1轮,Brazil,Norway,true,2.00,4.00,5.00,\n"
-        "TBD,1/8决赛 第1场,Brazil,Norway,true,2.00,4.00,5.00,H\n",
+        "2026-07-06,今日赛,Brazil,Norway,true,2.00,4.00,5.00,\n"
+        "2026-07-07,未来赛,Brazil,Norway,true,2.00,4.00,5.00,\n"
+        "2026-07-04,过往赛,Brazil,Norway,true,2.00,4.00,5.00,\n"
+        "2026-07-03,历史赛,Brazil,Norway,true,2.00,4.00,5.00,H\n",
         encoding="utf-8",
     )
-    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-01")
-    assert review["summary"]["pending_count"] == 1
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-06")
+    assert review["summary"]["today_pending_count"] == 1
+    assert review["summary"]["today_stake_total"] == 100
+    assert review["summary"]["awaiting_result_count"] == 1
+    assert review["summary"]["future_count"] == 1
     assert review["summary"]["settled_count"] == 1
-    assert review["summary"]["stage_count"] == {"小组赛 A组 第1轮": 1, "1/8决赛 第1场": 1}
-    assert [m["status"] for m in review["matches"]] == ["pending", "settled"]
+    assert len(review["today_pending"]) == 1
+    assert len(review["awaiting_result"]) == 1
+    assert len(review["future_pending"]) == 1
+    assert len(review["settled"]) == 1
+    assert review["today_pending"][0]["date"] == "2026-07-06"
+    assert review["awaiting_result"][0]["date"] == "2026-07-04"
+    assert review["future_pending"][0]["date"] == "2026-07-07"
 
 
 def test_render_html_contains_redesigned_sections():
@@ -164,17 +174,26 @@ def test_render_html_contains_redesigned_sections():
             "cumulative_pnl": 200.0,
             "settled_count": 1,
             "pending_count": 1,
+            "today_pending_count": 1,
+            "today_stake_total": 100,
+            "awaiting_result_count": 0,
+            "future_count": 0,
             "match_count": 2,
             "staked_count": 2,
             "staked_settled_count": 1,
             "profitable_count": 1,
             "hit_rate": 1.0,
+            "roi": 2.0,
             "stage_count": {"1/8决赛 第1场": 2},
         },
+        "today_pending": [review_for(None)],
+        "awaiting_result": [],
+        "future_pending": [],
+        "settled": [review_for("D")],
         "matches": [review_for(None), review_for("D")],
     }
     html = china_sp.render_html(review)
-    for text in ["未来预测", "历史复盘", "主胜下注", "平局下注", "客胜下注", "查看模型细节", "1/8决赛 第1场"]:
+    for text in ["今日预测", "完赛待补赛果", "历史复盘", "未来赛程", "主胜下注", "平局下注", "客胜下注", "查看模型细节", "1/8决赛 第1场"]:
         assert text in html
 
 
@@ -188,9 +207,11 @@ def test_known_fixture_without_sp_stays_in_folded_template_section(tmp_path):
     )
     review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-01")
     assert review["summary"]["raw_pending_count"] == 2
-    assert review["summary"]["pending_count"] == 1
+    assert review["summary"]["today_pending_count"] == 0
+    assert review["summary"]["future_count"] == 1
     assert review["summary"]["template_count"] == 1
-    assert len(review["display_pending"]) == 1
+    assert len(review["today_pending"]) == 0
+    assert len(review["future_pending"]) == 1
     assert len(review["template_pending"]) == 1
 
 
@@ -204,7 +225,8 @@ def test_tbd_fixture_stays_in_folded_template_section(tmp_path):
     )
     review = china_sp.build_review(path, FakeModel(), calibrator=identity)
     html = china_sp.render_html(review)
-    assert "未来预测 1" in html
+    assert "今日预测 0" in html
+    assert "未来赛程 0" in html
     assert "待录入赛程模板 1" in html
     assert "展开查看 1 场待录入模板" in html
 
@@ -218,12 +240,12 @@ def test_blank_sp_fixture_is_folded_instead_of_empty_main_card(tmp_path):
     )
     review = china_sp.build_review(path, FakeModel(), calibrator=identity)
     html = china_sp.render_html(review)
-    assert "未来预测 0" in html
+    assert "今日预测 0" in html
     assert "待录入赛程模板 1" in html
     assert "巴西 vs 挪威" in html
 
 
-def test_sp_match_on_or_before_review_date_waits_for_result(tmp_path):
+def test_sp_match_on_review_date_is_today_prediction(tmp_path):
     path = tmp_path / "china_sp_review.csv"
     path.write_text(
         "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
@@ -231,8 +253,31 @@ def test_sp_match_on_or_before_review_date_waits_for_result(tmp_path):
         encoding="utf-8",
     )
     review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-06")
-    assert review["summary"]["pending_count"] == 0
-    assert review["summary"]["awaiting_result_count"] == 1
+    assert review["summary"]["today_pending_count"] == 1
+    assert review["summary"]["today_stake_total"] == 100
+    assert review["summary"]["awaiting_result_count"] == 0
+    assert review["summary"]["future_count"] == 0
     html = china_sp.render_html(review)
-    assert "待赛果复核 1" in html
+    assert "今日预测 1" in html
+    assert "今日待结算" in html
     assert "巴西 vs 挪威" in html
+
+
+def test_date_partition_rules_for_today_past_future_and_settled(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-04,过往赛,Brazil,Norway,true,1.55,3.68,4.70,\n"
+        "2026-07-06,今日赛,Mexico,England,true,3.20,2.86,2.14,\n"
+        "2026-07-07,未来赛,Portugal,Spain,true,3.83,3.30,1.77,\n"
+        "2026-07-01,历史赛,Canada,Morocco,true,5.78,3.62,1.47,A\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-06")
+    assert [m["date"] for m in review["awaiting_result"]] == ["2026-07-04"]
+    assert [m["date"] for m in review["today_pending"]] == ["2026-07-06"]
+    assert [m["date"] for m in review["future_pending"]] == ["2026-07-07"]
+    assert [m["date"] for m in review["settled"]] == ["2026-07-01"]
+    assert review["summary"]["today_stake_total"] == 100
+    assert review["summary"]["awaiting_result_count"] == 1
+    assert review["summary"]["future_count"] == 1

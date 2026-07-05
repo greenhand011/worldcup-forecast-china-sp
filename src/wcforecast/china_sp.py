@@ -9,10 +9,11 @@ from __future__ import annotations
 import csv
 import html
 import sys
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Callable, Iterable, Mapping, Sequence
+from zoneinfo import ZoneInfo
 
 import numpy as np
 
@@ -295,36 +296,44 @@ def build_review(
     ]
     settled = [m for m in matches if m["status"] == "settled"]
     raw_pending = [m for m in matches if m["status"] == "pending"]
+    today_pending = [m for m in raw_pending if _is_today_pending(m, review_date)]
     awaiting_result = [m for m in raw_pending if _should_await_result(m, review_date)]
-    display_pending = [
-        m for m in raw_pending
-        if _should_show_pending_card(m) and not _should_await_result(m, review_date)
-    ]
+    future_pending = [m for m in raw_pending if _is_future_pending(m, review_date)]
     template_pending = [
         m for m in raw_pending
-        if not _should_show_pending_card(m) and not _should_await_result(m, review_date)
+        if m not in today_pending and m not in awaiting_result and m not in future_pending
     ]
     staked_settled = [m for m in settled if m["stake_total"] > 0]
     profitable = [m for m in staked_settled if float(m["pnl"]) > 0]
     cumulative_pnl = sum(float(m["pnl"]) for m in settled)
     hit_rate = (len(profitable) / len(staked_settled)) if staked_settled else None
+    history_stake_total = sum(float(m["stake_total"]) for m in staked_settled)
+    roi = (cumulative_pnl / history_stake_total) if history_stake_total else None
+    today_stake_total = sum(int(m["stake_total"]) for m in today_pending)
     for match in matches:
         match["needs_result"] = _should_await_result(match, review_date)
+        match["is_today_pending"] = _is_today_pending(match, review_date)
+        match["is_future_pending"] = _is_future_pending(match, review_date)
     return {
         "input": str(input_path),
         "bankroll": int(bankroll),
         "unit": int(unit),
         "min_edge": float(min_edge),
         "matches": matches,
-        "display_pending": display_pending,
+        "today_pending": today_pending,
+        "display_pending": today_pending,
         "awaiting_result": awaiting_result,
+        "future_pending": future_pending,
         "template_pending": template_pending,
         "settled": settled,
         "summary": {
             "cumulative_pnl": cumulative_pnl,
             "settled_count": len(settled),
-            "pending_count": len(display_pending),
+            "pending_count": len(today_pending),
+            "today_pending_count": len(today_pending),
+            "today_stake_total": today_stake_total,
             "awaiting_result_count": len(awaiting_result),
+            "future_count": len(future_pending),
             "raw_pending_count": len(raw_pending),
             "template_count": len(template_pending),
             "match_count": len(matches),
@@ -332,6 +341,7 @@ def build_review(
             "staked_settled_count": len(staked_settled),
             "profitable_count": len(profitable),
             "hit_rate": hit_rate,
+            "roi": roi,
             "stage_count": _stage_count(matches),
         },
     }
@@ -371,10 +381,11 @@ def format_console_table(review: Mapping[str, object]) -> str:
     body = ["  ".join(_pad(str(row[i]), widths[i]) for i in range(len(headers))) for row in rows]
     summary = review["summary"]
     footer = (
-        f"合计：共 {summary['match_count']} 场，已结算 {summary['settled_count']} 场，"
-        f"未来预测 {summary['pending_count']} 场，待赛果复核 {summary.get('awaiting_result_count', 0)} 场，"
-        f"对阵待定模板 {summary.get('template_count', 0)} 场，"
-        f"已模拟投入 {summary['staked_count']} 场，累计收益 {_fmt_console_currency(summary['cumulative_pnl'])}"
+        f"合计：今日预测 {summary.get('today_pending_count', summary.get('pending_count', 0))} 场，"
+        f"今日模拟投入 {_fmt_console_currency(summary.get('today_stake_total', 0))}，"
+        f"完赛待补赛果 {summary.get('awaiting_result_count', 0)} 场，"
+        f"已结算复盘 {summary['settled_count']} 场，未来赛程 {summary.get('future_count', 0)} 场，"
+        f"累计收益 {_fmt_console_currency(summary['cumulative_pnl'])}"
     )
     return _console_safe("\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer]))
 
@@ -382,17 +393,21 @@ def format_console_table(review: Mapping[str, object]) -> str:
 def render_html(review: Mapping[str, object]) -> str:
     """Render the review as a self-contained static HTML document."""
     matches = list(review["matches"])
-    pending = list(review.get("display_pending") or [m for m in matches if m["status"] == "pending" and _should_show_pending_card(m)])
+    today_pending = list(review.get("today_pending") or review.get("display_pending") or [])
     awaiting_result = list(review.get("awaiting_result") or [])
+    future_pending = list(review.get("future_pending") or [])
     template_pending = list(review.get("template_pending") or [m for m in matches if m["status"] == "pending" and not _should_show_pending_card(m)])
     settled = list(review.get("settled") or [m for m in matches if m["status"] == "settled"])
     summary = review["summary"]
     hit_rate = summary.get("hit_rate")
-    hit_rate_card = "" if hit_rate is None else f"""
-      <div class="summary-item">
-        <span>已买入命中率</span>
-        <strong>{_fmt_pct(float(hit_rate))}</strong>
-      </div>"""
+    roi = summary.get("roi")
+    history_stats = []
+    if hit_rate is not None:
+        history_stats.append(f"盈利场次率 {_fmt_pct(float(hit_rate))}")
+    if roi is not None:
+        history_stats.append(f"ROI {_fmt_pct(float(roi))}")
+    history_stats.append(f"累计盈亏 {_fmt_signed_currency(summary['cumulative_pnl'])}")
+    history_subtitle = "；".join(history_stats)
 
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -789,16 +804,14 @@ def render_html(review: Mapping[str, object]) -> str:
     </header>
 
     <section class="summary" aria-label="复盘汇总">
-      <div class="summary-item profit {_negative_class(summary['cumulative_pnl'])}">
-        <span>累计收益</span>
-        <strong>{_fmt_signed_currency(summary['cumulative_pnl'])}</strong>
+      <div class="summary-item"><span>今日预测</span><strong>{summary.get('today_pending_count', summary.get('pending_count', 0))}</strong></div>
+      <div class="summary-item profit">
+        <span>今日模拟投入</span>
+        <strong>{_fmt_currency(summary.get('today_stake_total', 0))}</strong>
       </div>
-      <div class="summary-item"><span>总赛程</span><strong>{summary['match_count']}</strong></div>
-      <div class="summary-item"><span>已结算</span><strong>{summary['settled_count']}</strong></div>
-      <div class="summary-item"><span>未来预测</span><strong>{summary['pending_count']}</strong></div>
-      <div class="summary-item"><span>待赛果复核</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
-      <div class="summary-item"><span>对阵待定模板</span><strong>{summary.get('template_count', 0)}</strong></div>
-      <div class="summary-item"><span>已模拟投入</span><strong>{summary['staked_count']}</strong></div>{hit_rate_card}
+      <div class="summary-item"><span>完赛待补赛果</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
+      <div class="summary-item"><span>已结算复盘</span><strong>{summary['settled_count']}</strong></div>
+      <div class="summary-item"><span>未来赛程</span><strong>{summary.get('future_count', 0)}</strong></div>
     </section>
 
     <div class="diagnosis">
@@ -810,26 +823,34 @@ def render_html(review: Mapping[str, object]) -> str:
 
     <section>
       <div class="section-heading">
-        <h2>未来预测 {len(pending)}</h2>
-        <span>未来比赛；中国体彩胜平负 SP 已录入或已公开导入</span>
+        <h2>今日预测 {len(today_pending)}</h2>
+        <span>date = today 且 actual 为空；未开赛、正在踢、已完赛但未录入 90 分钟比分都在这里</span>
       </div>
-      {_render_card_grid(pending, empty_text="暂无已录入 SP 的待开奖比赛。")}
+      {_render_card_grid(today_pending, empty_text="今日暂无已录入 SP 的待结算比赛。")}
     </section>
 
     <section>
       <div class="section-heading">
-        <h2>待赛果复核 {len(awaiting_result)}</h2>
-        <span>已到比赛日但 90 分钟 actual 尚未填写；补 H/D/A 后进入历史复盘并结算盈亏</span>
+        <h2>完赛待补赛果 {len(awaiting_result)}</h2>
+        <span>date &lt; today 且 90 分钟 actual 尚未填写；补 H/D/A 后进入历史复盘并结算盈亏</span>
       </div>
-      {_render_card_grid(awaiting_result, empty_text="暂无待赛果复核比赛。")}
+      {_render_card_grid(awaiting_result, empty_text="暂无完赛待补赛果比赛。")}
     </section>
 
     <section>
       <div class="section-heading">
         <h2>历史复盘 {len(settled)}</h2>
-        <span>actual = 90 分钟 H / D / A 的比赛</span>
+        <span>{_html_escape(history_subtitle)}</span>
       </div>
       {_render_card_grid(settled, empty_text="暂无已结算比赛。")}
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <h2>未来赛程 {len(future_pending)}</h2>
+        <span>date &gt; today 且 actual 为空；默认折叠，不计入今日模拟投入</span>
+      </div>
+      {_render_collapsed_card_section(future_pending, empty_text="暂无已录入 SP 的未来赛程。", summary_text=f"展开查看 {len(future_pending)} 场未来赛程")}
     </section>
 
     <section>
@@ -1056,7 +1077,7 @@ def _bet_side_label(match: Mapping[str, object], outcome: str) -> str:
 
 def _parse_review_date(value: str | date | None) -> date:
     if value is None:
-        return date.today()
+        return datetime.now(ZoneInfo("Asia/Shanghai")).date()
     if isinstance(value, date):
         return value
     return date.fromisoformat(str(value))
@@ -1072,11 +1093,9 @@ def _match_date(match: Mapping[str, object]) -> date | None:
 def _should_await_result(match: Mapping[str, object], review_date: date) -> bool:
     match_date = _match_date(match)
     return (
-        match.get("status") == "pending"
-        and bool(match.get("has_any_sp"))
-        and not bool(match.get("unresolved"))
+        _should_show_pending_card(match)
         and match_date is not None
-        and match_date <= review_date
+        and match_date < review_date
     )
 
 
@@ -1089,15 +1108,27 @@ def _should_show_pending_card(match: Mapping[str, object]) -> bool:
     )
 
 
+def _is_today_pending(match: Mapping[str, object], review_date: date) -> bool:
+    match_date = _match_date(match)
+    return _should_show_pending_card(match) and match_date == review_date
+
+
+def _is_future_pending(match: Mapping[str, object], review_date: date) -> bool:
+    match_date = _match_date(match)
+    return (
+        _should_show_pending_card(match)
+        and match_date is not None
+        and match_date > review_date
+    )
+
+
 def _main_display_matches(review: Mapping[str, object]) -> list[Mapping[str, object]]:
     """Matches that deserve the main console/web review surface."""
     matches = list(review.get("matches", []))
-    pending = list(review.get("display_pending") or [
-        m for m in matches if m.get("status") == "pending" and _should_show_pending_card(m)
-    ])
+    today_pending = list(review.get("today_pending") or review.get("display_pending") or [])
     awaiting = list(review.get("awaiting_result") or [])
     settled = list(review.get("settled") or [m for m in matches if m.get("status") == "settled"])
-    return [*awaiting, *pending, *settled]
+    return [*today_pending, *awaiting, *settled]
 
 
 def _render_card_grid(matches: Iterable[Mapping[str, object]], empty_text: str) -> str:
@@ -1106,6 +1137,22 @@ def _render_card_grid(matches: Iterable[Mapping[str, object]], empty_text: str) 
         return f'<div class="empty">{_html_escape(empty_text)}</div>'
     cards = "\n".join(_render_card(match) for match in matches)
     return f'<div class="card-grid">{cards}</div>'
+
+
+def _render_collapsed_card_section(
+    matches: Iterable[Mapping[str, object]],
+    empty_text: str,
+    summary_text: str,
+) -> str:
+    matches = list(matches)
+    if not matches:
+        return f'<div class="empty">{_html_escape(empty_text)}</div>'
+    cards = "\n".join(_render_card(match) for match in matches)
+    return f"""
+      <details class="template-box">
+        <summary>{_html_escape(summary_text)}</summary>
+        <div class="card-grid">{cards}</div>
+      </details>"""
 
 
 def _render_template_section(matches: Iterable[Mapping[str, object]]) -> str:
@@ -1137,6 +1184,8 @@ def _render_card(match: Mapping[str, object]) -> str:
             status = '<span class="status waiting">待录入SP</span>'
         elif match.get("needs_result"):
             status = '<span class="status waiting">待赛果</span>'
+        elif match.get("is_today_pending"):
+            status = '<span class="status staked">今日待结算</span>'
         elif match["stake_total"] > 0:
             status = '<span class="status staked">待开奖</span>'
         else:
