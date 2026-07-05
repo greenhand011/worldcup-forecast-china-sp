@@ -78,6 +78,13 @@ wcforecast china-sp-review
 
 `china-sp-fetch` reads publicly accessible 1X2 SP display data, imports only non-handicap `nspf` home/draw/away SP rows, and filters World Cup matches. It does not log in, place bets, or purchase lottery tickets; fetched SP values should still be checked against official channels.
 
+页面展示逻辑 / Page sections:
+
+- `未来预测`: 已有 SP、尚未到比赛日或尚未开赛的比赛。 / Upcoming matches with SP.
+- `待赛果复核`: 已到比赛日、已有赛前 SP，但 `actual` 还没填的比赛。 / Matches with SP that need final H/D/A confirmation.
+- `历史复盘`: `actual = H/D/A` 后自动结算盈亏。 / Settled review after `actual = H/D/A`.
+- 页面队名使用中文展示，模型内部仍使用英文队名识别。 / Team names are displayed in Chinese while the model still uses English identifiers internally.
+
 ## CSV 数据格式 / CSV Format
 
 编辑 `data/china_sp_review.csv`，每行一场比赛。以 `#` 开头的行是注释，会被程序忽略。

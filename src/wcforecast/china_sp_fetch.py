@@ -113,7 +113,7 @@ def fetch_public_sp(source_url: str = DEFAULT_SOURCE_URL, timeout: int = 20) -> 
 def parse_public_sp_html(page: str, source_url: str = DEFAULT_SOURCE_URL) -> list[FetchedSPMatch]:
     """Parse a public football SP page and keep only World Cup nspf rows."""
     rows: list[FetchedSPMatch] = []
-    for tr in re.findall(r'<tr class="bet-tb-tr".*?</tr>', page, flags=re.S):
+    for tr in re.findall(r'<tr class="[^"]*\bbet-tb-tr\b[^"]*".*?</tr>', page, flags=re.S):
         if _attr(tr, "data-simpleleague") != "世界杯":
             continue
         odds = _parse_nspf_odds(tr)

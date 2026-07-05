@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import html
 import sys
+from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Callable, Iterable, Mapping, Sequence
@@ -29,6 +30,57 @@ ACTUAL_LABELS = {"H": "主胜", "D": "平局", "A": "客胜", None: "待开奖"}
 DEFAULT_STAGE = "未标注赛段"
 TBD_NAMES = {"", "TBD", "待定", "待定球队", "未定", "To be decided"}
 REPO_URL = "https://github.com/greenhand011/worldcup-forecast-china-sp"
+TEAM_ZH = {
+    "Algeria": "阿尔及利亚",
+    "Argentina": "阿根廷",
+    "Australia": "澳大利亚",
+    "Austria": "奥地利",
+    "Belgium": "比利时",
+    "Bosnia and Herzegovina": "波黑",
+    "Brazil": "巴西",
+    "Canada": "加拿大",
+    "Cape Verde": "佛得角",
+    "Colombia": "哥伦比亚",
+    "Croatia": "克罗地亚",
+    "Curaçao": "库拉索",
+    "Czech Republic": "捷克",
+    "DR Congo": "民主刚果",
+    "Ecuador": "厄瓜多尔",
+    "Egypt": "埃及",
+    "England": "英格兰",
+    "France": "法国",
+    "Germany": "德国",
+    "Ghana": "加纳",
+    "Haiti": "海地",
+    "Iran": "伊朗",
+    "Iraq": "伊拉克",
+    "Ivory Coast": "科特迪瓦",
+    "Japan": "日本",
+    "Jordan": "约旦",
+    "Mexico": "墨西哥",
+    "Morocco": "摩洛哥",
+    "Netherlands": "荷兰",
+    "New Zealand": "新西兰",
+    "Norway": "挪威",
+    "Panama": "巴拿马",
+    "Paraguay": "巴拉圭",
+    "Portugal": "葡萄牙",
+    "Qatar": "卡塔尔",
+    "Saudi Arabia": "沙特",
+    "Scotland": "苏格兰",
+    "Senegal": "塞内加尔",
+    "South Africa": "南非",
+    "South Korea": "韩国",
+    "Spain": "西班牙",
+    "Sweden": "瑞典",
+    "Switzerland": "瑞士",
+    "Tunisia": "突尼斯",
+    "Turkey": "土耳其",
+    "United States": "美国",
+    "Uruguay": "乌拉圭",
+    "Uzbekistan": "乌兹别克斯坦",
+    "TBD": "待定",
+}
 
 
 def read_china_sp_csv(path: str | Path) -> list[dict]:
@@ -187,6 +239,8 @@ def review_match(
         "stage": str(row.get("stage") or DEFAULT_STAGE).strip() or DEFAULT_STAGE,
         "home": home or "TBD",
         "away": away or "TBD",
+        "home_zh": _team_zh(home or "TBD"),
+        "away_zh": _team_zh(away or "TBD"),
         "neutral": neutral,
         "unresolved": unresolved,
         "probabilities": probabilities,
@@ -217,9 +271,11 @@ def build_review(
     bankroll: int = 100,
     unit: int = 100,
     min_edge: float = 0.0,
+    today: str | date | None = None,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
     """Build a structured China SP review for CLI and HTML rendering."""
+    review_date = _parse_review_date(today)
     rows = read_china_sp_csv(input_path)
     matches = [
         review_match(
@@ -234,12 +290,21 @@ def build_review(
     ]
     settled = [m for m in matches if m["status"] == "settled"]
     raw_pending = [m for m in matches if m["status"] == "pending"]
-    display_pending = [m for m in raw_pending if _should_show_pending_card(m)]
-    template_pending = [m for m in raw_pending if not _should_show_pending_card(m)]
+    awaiting_result = [m for m in raw_pending if _should_await_result(m, review_date)]
+    display_pending = [
+        m for m in raw_pending
+        if _should_show_pending_card(m) and not _should_await_result(m, review_date)
+    ]
+    template_pending = [
+        m for m in raw_pending
+        if not _should_show_pending_card(m) and not _should_await_result(m, review_date)
+    ]
     staked_settled = [m for m in settled if m["stake_total"] > 0]
     profitable = [m for m in staked_settled if float(m["pnl"]) > 0]
     cumulative_pnl = sum(float(m["pnl"]) for m in settled)
     hit_rate = (len(profitable) / len(staked_settled)) if staked_settled else None
+    for match in matches:
+        match["needs_result"] = _should_await_result(match, review_date)
     return {
         "input": str(input_path),
         "bankroll": int(bankroll),
@@ -247,12 +312,14 @@ def build_review(
         "min_edge": float(min_edge),
         "matches": matches,
         "display_pending": display_pending,
+        "awaiting_result": awaiting_result,
         "template_pending": template_pending,
         "settled": settled,
         "summary": {
             "cumulative_pnl": cumulative_pnl,
             "settled_count": len(settled),
             "pending_count": len(display_pending),
+            "awaiting_result_count": len(awaiting_result),
             "raw_pending_count": len(raw_pending),
             "template_count": len(template_pending),
             "match_count": len(matches),
@@ -281,7 +348,7 @@ def format_console_table(review: Mapping[str, object]) -> str:
     for match in _main_display_matches(review):
         rows.append([
             match["stage"],
-            f"{match['home']} vs {match['away']}",
+            _match_title(match),
             _fmt_pct_triplet(match["probabilities"]),
             _fmt_sp_triplet(match["sp"]),
             _fmt_alloc_triplet(match["allocation"]),
@@ -301,7 +368,8 @@ def format_console_table(review: Mapping[str, object]) -> str:
     summary = review["summary"]
     footer = (
         f"合计：共 {summary['match_count']} 场，已结算 {summary['settled_count']} 场，"
-        f"未来预测 {summary['pending_count']} 场，对阵待定模板 {summary.get('template_count', 0)} 场，"
+        f"未来预测 {summary['pending_count']} 场，待赛果复核 {summary.get('awaiting_result_count', 0)} 场，"
+        f"对阵待定模板 {summary.get('template_count', 0)} 场，"
         f"已模拟买入 {summary['staked_count']} 场，累计收益 {_fmt_console_currency(summary['cumulative_pnl'])}"
     )
     return _console_safe("\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer]))
@@ -311,6 +379,7 @@ def render_html(review: Mapping[str, object]) -> str:
     """Render the review as a self-contained static HTML document."""
     matches = list(review["matches"])
     pending = list(review.get("display_pending") or [m for m in matches if m["status"] == "pending" and _should_show_pending_card(m)])
+    awaiting_result = list(review.get("awaiting_result") or [])
     template_pending = list(review.get("template_pending") or [m for m in matches if m["status"] == "pending" and not _should_show_pending_card(m)])
     settled = list(review.get("settled") or [m for m in matches if m["status"] == "settled"])
     summary = review["summary"]
@@ -396,7 +465,7 @@ def render_html(review: Mapping[str, object]) -> str:
     }}
     .summary {{
       display: grid;
-      grid-template-columns: minmax(0, 1.35fr) repeat(4, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1.35fr) repeat(5, minmax(0, 1fr));
       gap: 10px;
       margin: 8px 0 24px;
     }}
@@ -557,7 +626,16 @@ def render_html(review: Mapping[str, object]) -> str:
       color: var(--muted);
       font-size: 12px;
       line-height: 1.2;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+    }}
+    .bet-team {{
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.2;
+      min-height: 16px;
+      margin-bottom: 6px;
+      overflow-wrap: anywhere;
     }}
     .marker {{
       display: inline-grid;
@@ -714,6 +792,7 @@ def render_html(review: Mapping[str, object]) -> str:
       <div class="summary-item"><span>总赛程</span><strong>{summary['match_count']}</strong></div>
       <div class="summary-item"><span>已结算</span><strong>{summary['settled_count']}</strong></div>
       <div class="summary-item"><span>未来预测</span><strong>{summary['pending_count']}</strong></div>
+      <div class="summary-item"><span>待赛果复核</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
       <div class="summary-item"><span>对阵待定模板</span><strong>{summary.get('template_count', 0)}</strong></div>
       <div class="summary-item"><span>已模拟买入</span><strong>{summary['staked_count']}</strong></div>{hit_rate_card}
     </section>
@@ -727,9 +806,17 @@ def render_html(review: Mapping[str, object]) -> str:
     <section>
       <div class="section-heading">
         <h2>未来预测 {len(pending)}</h2>
-        <span>只显示对阵已确定的未开奖比赛；SP 未录入时仍展示模型概率</span>
+        <span>未来比赛；中国体彩胜平负 SP 已录入或已公开导入</span>
       </div>
       {_render_card_grid(pending, empty_text="暂无已录入 SP 的待开奖比赛。")}
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <h2>待赛果复核 {len(awaiting_result)}</h2>
+        <span>已到比赛日但 actual 尚未填写；补 H/D/A 后进入历史复盘并结算盈亏</span>
+      </div>
+      {_render_card_grid(awaiting_result, empty_text="暂无待赛果复核比赛。")}
     </section>
 
     <section>
@@ -946,6 +1033,48 @@ def _console_safe(value: str) -> str:
     return value.encode(encoding, errors="replace").decode(encoding)
 
 
+def _team_zh(team: str) -> str:
+    return TEAM_ZH.get(str(team), str(team))
+
+
+def _match_title(match: Mapping[str, object]) -> str:
+    return f"{match.get('home_zh') or _team_zh(match['home'])} vs {match.get('away_zh') or _team_zh(match['away'])}"
+
+
+def _bet_side_label(match: Mapping[str, object], outcome: str) -> str:
+    if outcome == "home":
+        return str(match.get("home_zh") or _team_zh(str(match.get("home", ""))))
+    if outcome == "away":
+        return str(match.get("away_zh") or _team_zh(str(match.get("away", ""))))
+    return "平局"
+
+
+def _parse_review_date(value: str | date | None) -> date:
+    if value is None:
+        return date.today()
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(str(value))
+
+
+def _match_date(match: Mapping[str, object]) -> date | None:
+    try:
+        return date.fromisoformat(str(match.get("date", "")))
+    except ValueError:
+        return None
+
+
+def _should_await_result(match: Mapping[str, object], review_date: date) -> bool:
+    match_date = _match_date(match)
+    return (
+        match.get("status") == "pending"
+        and bool(match.get("has_any_sp"))
+        and not bool(match.get("unresolved"))
+        and match_date is not None
+        and match_date <= review_date
+    )
+
+
 def _should_show_pending_card(match: Mapping[str, object]) -> bool:
     """Return True when a pending match has SP data worth reviewing."""
     return (
@@ -961,8 +1090,9 @@ def _main_display_matches(review: Mapping[str, object]) -> list[Mapping[str, obj
     pending = list(review.get("display_pending") or [
         m for m in matches if m.get("status") == "pending" and _should_show_pending_card(m)
     ])
+    awaiting = list(review.get("awaiting_result") or [])
     settled = list(review.get("settled") or [m for m in matches if m.get("status") == "settled"])
-    return [*pending, *settled]
+    return [*awaiting, *pending, *settled]
 
 
 def _render_card_grid(matches: Iterable[Mapping[str, object]], empty_text: str) -> str:
@@ -990,7 +1120,7 @@ def _render_template_row(match: Mapping[str, object]) -> str:
     return f"""
           <div class="template-row">
             {_html_escape(match['date'])} · {_html_escape(match['stage'])}
-            <strong>{_html_escape(match['home'])} vs {_html_escape(match['away'])}</strong>
+            <strong>{_html_escape(_match_title(match))}</strong>
           </div>"""
 
 
@@ -1000,6 +1130,8 @@ def _render_card(match: Mapping[str, object]) -> str:
             status = '<span class="status waiting">对阵待定</span>'
         elif match["stake_status"] == "待录入SP":
             status = '<span class="status waiting">待录入SP</span>'
+        elif match.get("needs_result"):
+            status = '<span class="status waiting">待赛果</span>'
         elif match["stake_total"] > 0:
             status = '<span class="status staked">待开奖</span>'
         else:
@@ -1016,7 +1148,7 @@ def _render_card(match: Mapping[str, object]) -> str:
           <header class="match-head">
             <div>
               <div class="date">{_html_escape(match['date'])}<span class="stage">{_html_escape(match['stage'])}</span></div>
-              <h3 class="match-title">{_html_escape(match['home'])}<span>vs</span>{_html_escape(match['away'])}</h3>
+              <h3 class="match-title">{_html_escape(_match_title(match))}</h3>
             </div>
             {status}
           </header>
@@ -1052,6 +1184,7 @@ def _render_bet_column(match: Mapping[str, object], outcome: str) -> str:
     return f"""
             <div class="bet-column{class_attr}">
               <div class="bet-label"><span class="marker">{OUTCOME_MARKERS[outcome]}</span>{label}</div>
+              <div class="bet-team">{_html_escape(_bet_side_label(match, outcome))}</div>
               <div class="amount">{amount}</div>
               <div class="sp">{_fmt_sp(match["sp"][outcome])}</div>
             </div>"""

@@ -73,7 +73,7 @@
     }
     .summary {
       display: grid;
-      grid-template-columns: minmax(0, 1.35fr) repeat(4, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1.35fr) repeat(5, minmax(0, 1fr));
       gap: 10px;
       margin: 8px 0 24px;
     }
@@ -234,7 +234,16 @@
       color: var(--muted);
       font-size: 12px;
       line-height: 1.2;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+    }
+    .bet-team {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.2;
+      min-height: 16px;
+      margin-bottom: 6px;
+      overflow-wrap: anywhere;
     }
     .marker {
       display: inline-grid;
@@ -388,11 +397,12 @@
         <span>累计收益</span>
         <strong>+¥0.0</strong>
       </div>
-      <div class="summary-item"><span>总赛程</span><strong>108</strong></div>
+      <div class="summary-item"><span>总赛程</span><strong>110</strong></div>
       <div class="summary-item"><span>已结算</span><strong>0</strong></div>
       <div class="summary-item"><span>未来预测</span><strong>4</strong></div>
+      <div class="summary-item"><span>待赛果复核</span><strong>2</strong></div>
       <div class="summary-item"><span>对阵待定模板</span><strong>104</strong></div>
-      <div class="summary-item"><span>已模拟买入</span><strong>2</strong></div>
+      <div class="summary-item"><span>已模拟买入</span><strong>3</strong></div>
     </section>
 
     <div class="diagnosis">
@@ -404,14 +414,14 @@
     <section>
       <div class="section-heading">
         <h2>未来预测 4</h2>
-        <span>只显示对阵已确定的未开奖比赛；SP 未录入时仍展示模型概率</span>
+        <span>未来比赛；中国体彩胜平负 SP 已录入或已公开导入</span>
       </div>
       <div class="card-grid">
         <article class="match-card">
           <header class="match-head">
             <div>
               <div class="date">2026-07-07<span class="stage">1/8决赛（公开SP）</span></div>
-              <h3 class="match-title">Portugal<span>vs</span>Spain</h3>
+              <h3 class="match-title">葡萄牙 vs 西班牙</h3>
             </div>
             <span class="status staked">待开奖</span>
           </header>
@@ -419,18 +429,21 @@
 
             <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="bet-team">葡萄牙</div>
               <div class="amount">¥100</div>
               <div class="sp">@3.83</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="bet-team">平局</div>
               <div class="amount">¥0</div>
               <div class="sp">@3.30</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="bet-team">西班牙</div>
               <div class="amount">¥0</div>
               <div class="sp">@1.77</div>
             </div>
@@ -452,7 +465,7 @@
           <header class="match-head">
             <div>
               <div class="date">2026-07-07<span class="stage">1/8决赛（公开SP）</span></div>
-              <h3 class="match-title">United States<span>vs</span>Belgium</h3>
+              <h3 class="match-title">美国 vs 比利时</h3>
             </div>
             <span class="status waiting">观望</span>
           </header>
@@ -460,18 +473,21 @@
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="bet-team">美国</div>
               <div class="amount">¥0</div>
               <div class="sp">@2.44</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="bet-team">平局</div>
               <div class="amount">¥0</div>
               <div class="sp">@3.26</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="bet-team">比利时</div>
               <div class="amount">¥0</div>
               <div class="sp">@2.42</div>
             </div>
@@ -493,7 +509,7 @@
           <header class="match-head">
             <div>
               <div class="date">2026-07-08<span class="stage">1/8决赛（公开SP）</span></div>
-              <h3 class="match-title">Argentina<span>vs</span>Egypt</h3>
+              <h3 class="match-title">阿根廷 vs 埃及</h3>
             </div>
             <span class="status staked">待开奖</span>
           </header>
@@ -501,18 +517,21 @@
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="bet-team">阿根廷</div>
               <div class="amount">¥0</div>
               <div class="sp">@1.23</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="bet-team">平局</div>
               <div class="amount">¥0</div>
               <div class="sp">@4.65</div>
             </div>
 
             <div class="bet-column selected">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="bet-team">埃及</div>
               <div class="amount">¥100</div>
               <div class="sp">@10.00</div>
             </div>
@@ -534,7 +553,7 @@
           <header class="match-head">
             <div>
               <div class="date">2026-07-08<span class="stage">1/8决赛（公开SP）</span></div>
-              <h3 class="match-title">Switzerland<span>vs</span>Colombia</h3>
+              <h3 class="match-title">瑞士 vs 哥伦比亚</h3>
             </div>
             <span class="status waiting">观望</span>
           </header>
@@ -542,18 +561,21 @@
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="bet-team">瑞士</div>
               <div class="amount">¥0</div>
               <div class="sp">@2.91</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="bet-team">平局</div>
               <div class="amount">¥0</div>
               <div class="sp">@2.82</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="bet-team">哥伦比亚</div>
               <div class="amount">¥0</div>
               <div class="sp">@2.32</div>
             </div>
@@ -565,6 +587,101 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>34.7%</div><div class="detail-value"><b>平局</b>31.5%</div><div class="detail-value"><b>客胜</b>33.9%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.89</div><div class="detail-value"><b>平局</b>3.18</div><div class="detail-value"><b>客胜</b>2.95</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value positive"><b>主胜</b>+0.8%</div><div class="detail-value negative"><b>平局</b>-11.2%</div><div class="detail-value negative"><b>客胜</b>-21.5%</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">edge未过阈值，观望</div></div>
+            </div>
+          </details>
+        </article>
+</div>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <h2>待赛果复核 2</h2>
+        <span>已到比赛日但 actual 尚未填写；补 H/D/A 后进入历史复盘并结算盈亏</span>
+      </div>
+      <div class="card-grid">
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-07-06<span class="stage">1/8决赛（公开SP）</span></div>
+              <h3 class="match-title">巴西 vs 挪威</h3>
+            </div>
+            <span class="status waiting">待赛果</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="bet-team">巴西</div>
+              <div class="amount">¥0</div>
+              <div class="sp">@1.55</div>
+            </div>
+
+            <div class="bet-column selected">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="bet-team">平局</div>
+              <div class="amount">¥100</div>
+              <div class="sp">@3.68</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="bet-team">挪威</div>
+              <div class="amount">¥0</div>
+              <div class="sp">@4.70</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>49.3%</div><div class="detail-value"><b>平局</b>29.0%</div><div class="detail-value"><b>客胜</b>21.7%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.03</div><div class="detail-value"><b>平局</b>3.45</div><div class="detail-value"><b>客胜</b>4.62</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-23.5%</div><div class="detail-value positive"><b>平局</b>+6.7%</div><div class="detail-value positive"><b>客胜</b>+1.8%</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">模拟买入</div></div>
+            </div>
+          </details>
+        </article>
+
+
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-07-06<span class="stage">1/8决赛（公开SP）</span></div>
+              <h3 class="match-title">墨西哥 vs 英格兰</h3>
+            </div>
+            <span class="status waiting">待赛果</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="bet-team">墨西哥</div>
+              <div class="amount">¥0</div>
+              <div class="sp">@3.20</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="bet-team">平局</div>
+              <div class="amount">¥0</div>
+              <div class="sp">@2.86</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="bet-team">英格兰</div>
+              <div class="amount">¥0</div>
+              <div class="sp">@2.14</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>23.3%</div><div class="detail-value"><b>平局</b>29.2%</div><div class="detail-value"><b>客胜</b>47.5%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>4.29</div><div class="detail-value"><b>平局</b>3.43</div><div class="detail-value"><b>客胜</b>2.11</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-25.3%</div><div class="detail-value negative"><b>平局</b>-16.6%</div><div class="detail-value positive"><b>客胜</b>+1.6%</div></div>
               <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">edge未过阈值，观望</div></div>
             </div>
           </details>
@@ -591,522 +708,522 @@
         <div class="template-list">
           <div class="template-row">
             TBD · 小组赛 A组 第1轮
-            <strong>Mexico vs South Africa</strong>
+            <strong>墨西哥 vs 南非</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 A组 第1轮
-            <strong>South Korea vs Czech Republic</strong>
+            <strong>韩国 vs 捷克</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 A组 第2轮
-            <strong>Mexico vs South Korea</strong>
+            <strong>墨西哥 vs 韩国</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 A组 第2轮
-            <strong>South Africa vs Czech Republic</strong>
+            <strong>南非 vs 捷克</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 A组 第3轮
-            <strong>Mexico vs Czech Republic</strong>
+            <strong>墨西哥 vs 捷克</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 A组 第3轮
-            <strong>South Africa vs South Korea</strong>
+            <strong>南非 vs 韩国</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 B组 第1轮
-            <strong>Canada vs Bosnia and Herzegovina</strong>
+            <strong>加拿大 vs 波黑</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 B组 第1轮
-            <strong>Qatar vs Switzerland</strong>
+            <strong>卡塔尔 vs 瑞士</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 B组 第2轮
-            <strong>Canada vs Qatar</strong>
+            <strong>加拿大 vs 卡塔尔</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 B组 第2轮
-            <strong>Bosnia and Herzegovina vs Switzerland</strong>
+            <strong>波黑 vs 瑞士</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 B组 第3轮
-            <strong>Canada vs Switzerland</strong>
+            <strong>加拿大 vs 瑞士</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 B组 第3轮
-            <strong>Bosnia and Herzegovina vs Qatar</strong>
+            <strong>波黑 vs 卡塔尔</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 C组 第1轮
-            <strong>Brazil vs Morocco</strong>
+            <strong>巴西 vs 摩洛哥</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 C组 第1轮
-            <strong>Haiti vs Scotland</strong>
+            <strong>海地 vs 苏格兰</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 C组 第2轮
-            <strong>Brazil vs Haiti</strong>
+            <strong>巴西 vs 海地</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 C组 第2轮
-            <strong>Morocco vs Scotland</strong>
+            <strong>摩洛哥 vs 苏格兰</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 C组 第3轮
-            <strong>Brazil vs Scotland</strong>
+            <strong>巴西 vs 苏格兰</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 C组 第3轮
-            <strong>Morocco vs Haiti</strong>
+            <strong>摩洛哥 vs 海地</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 D组 第1轮
-            <strong>United States vs Paraguay</strong>
+            <strong>美国 vs 巴拉圭</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 D组 第1轮
-            <strong>Australia vs Turkey</strong>
+            <strong>澳大利亚 vs 土耳其</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 D组 第2轮
-            <strong>United States vs Australia</strong>
+            <strong>美国 vs 澳大利亚</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 D组 第2轮
-            <strong>Paraguay vs Turkey</strong>
+            <strong>巴拉圭 vs 土耳其</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 D组 第3轮
-            <strong>United States vs Turkey</strong>
+            <strong>美国 vs 土耳其</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 D组 第3轮
-            <strong>Paraguay vs Australia</strong>
+            <strong>巴拉圭 vs 澳大利亚</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 E组 第1轮
-            <strong>Germany vs Curaçao</strong>
+            <strong>德国 vs 库拉索</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 E组 第1轮
-            <strong>Ivory Coast vs Ecuador</strong>
+            <strong>科特迪瓦 vs 厄瓜多尔</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 E组 第2轮
-            <strong>Germany vs Ivory Coast</strong>
+            <strong>德国 vs 科特迪瓦</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 E组 第2轮
-            <strong>Curaçao vs Ecuador</strong>
+            <strong>库拉索 vs 厄瓜多尔</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 E组 第3轮
-            <strong>Germany vs Ecuador</strong>
+            <strong>德国 vs 厄瓜多尔</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 E组 第3轮
-            <strong>Curaçao vs Ivory Coast</strong>
+            <strong>库拉索 vs 科特迪瓦</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 F组 第1轮
-            <strong>Netherlands vs Japan</strong>
+            <strong>荷兰 vs 日本</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 F组 第1轮
-            <strong>Sweden vs Tunisia</strong>
+            <strong>瑞典 vs 突尼斯</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 F组 第2轮
-            <strong>Netherlands vs Sweden</strong>
+            <strong>荷兰 vs 瑞典</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 F组 第2轮
-            <strong>Japan vs Tunisia</strong>
+            <strong>日本 vs 突尼斯</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 F组 第3轮
-            <strong>Netherlands vs Tunisia</strong>
+            <strong>荷兰 vs 突尼斯</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 F组 第3轮
-            <strong>Japan vs Sweden</strong>
+            <strong>日本 vs 瑞典</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 G组 第1轮
-            <strong>Belgium vs Egypt</strong>
+            <strong>比利时 vs 埃及</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 G组 第1轮
-            <strong>Iran vs New Zealand</strong>
+            <strong>伊朗 vs 新西兰</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 G组 第2轮
-            <strong>Belgium vs Iran</strong>
+            <strong>比利时 vs 伊朗</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 G组 第2轮
-            <strong>Egypt vs New Zealand</strong>
+            <strong>埃及 vs 新西兰</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 G组 第3轮
-            <strong>Belgium vs New Zealand</strong>
+            <strong>比利时 vs 新西兰</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 G组 第3轮
-            <strong>Egypt vs Iran</strong>
+            <strong>埃及 vs 伊朗</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 H组 第1轮
-            <strong>Spain vs Cape Verde</strong>
+            <strong>西班牙 vs 佛得角</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 H组 第1轮
-            <strong>Saudi Arabia vs Uruguay</strong>
+            <strong>沙特 vs 乌拉圭</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 H组 第2轮
-            <strong>Spain vs Saudi Arabia</strong>
+            <strong>西班牙 vs 沙特</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 H组 第2轮
-            <strong>Cape Verde vs Uruguay</strong>
+            <strong>佛得角 vs 乌拉圭</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 H组 第3轮
-            <strong>Spain vs Uruguay</strong>
+            <strong>西班牙 vs 乌拉圭</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 H组 第3轮
-            <strong>Cape Verde vs Saudi Arabia</strong>
+            <strong>佛得角 vs 沙特</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 I组 第1轮
-            <strong>France vs Senegal</strong>
+            <strong>法国 vs 塞内加尔</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 I组 第1轮
-            <strong>Iraq vs Norway</strong>
+            <strong>伊拉克 vs 挪威</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 I组 第2轮
-            <strong>France vs Iraq</strong>
+            <strong>法国 vs 伊拉克</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 I组 第2轮
-            <strong>Senegal vs Norway</strong>
+            <strong>塞内加尔 vs 挪威</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 I组 第3轮
-            <strong>France vs Norway</strong>
+            <strong>法国 vs 挪威</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 I组 第3轮
-            <strong>Senegal vs Iraq</strong>
+            <strong>塞内加尔 vs 伊拉克</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 J组 第1轮
-            <strong>Argentina vs Algeria</strong>
+            <strong>阿根廷 vs 阿尔及利亚</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 J组 第1轮
-            <strong>Austria vs Jordan</strong>
+            <strong>奥地利 vs 约旦</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 J组 第2轮
-            <strong>Argentina vs Austria</strong>
+            <strong>阿根廷 vs 奥地利</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 J组 第2轮
-            <strong>Algeria vs Jordan</strong>
+            <strong>阿尔及利亚 vs 约旦</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 J组 第3轮
-            <strong>Argentina vs Jordan</strong>
+            <strong>阿根廷 vs 约旦</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 J组 第3轮
-            <strong>Algeria vs Austria</strong>
+            <strong>阿尔及利亚 vs 奥地利</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 K组 第1轮
-            <strong>Portugal vs DR Congo</strong>
+            <strong>葡萄牙 vs 民主刚果</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 K组 第1轮
-            <strong>Uzbekistan vs Colombia</strong>
+            <strong>乌兹别克斯坦 vs 哥伦比亚</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 K组 第2轮
-            <strong>Portugal vs Uzbekistan</strong>
+            <strong>葡萄牙 vs 乌兹别克斯坦</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 K组 第2轮
-            <strong>DR Congo vs Colombia</strong>
+            <strong>民主刚果 vs 哥伦比亚</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 K组 第3轮
-            <strong>Portugal vs Colombia</strong>
+            <strong>葡萄牙 vs 哥伦比亚</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 K组 第3轮
-            <strong>DR Congo vs Uzbekistan</strong>
+            <strong>民主刚果 vs 乌兹别克斯坦</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 L组 第1轮
-            <strong>England vs Croatia</strong>
+            <strong>英格兰 vs 克罗地亚</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 L组 第1轮
-            <strong>Ghana vs Panama</strong>
+            <strong>加纳 vs 巴拿马</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 L组 第2轮
-            <strong>England vs Ghana</strong>
+            <strong>英格兰 vs 加纳</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 L组 第2轮
-            <strong>Croatia vs Panama</strong>
+            <strong>克罗地亚 vs 巴拿马</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 L组 第3轮
-            <strong>England vs Panama</strong>
+            <strong>英格兰 vs 巴拿马</strong>
           </div>
 
           <div class="template-row">
             TBD · 小组赛 L组 第3轮
-            <strong>Croatia vs Ghana</strong>
+            <strong>克罗地亚 vs 加纳</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第1场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第2场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第3场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第4场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第5场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第6场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第7场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第8场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第9场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第10场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第11场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第12场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第13场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第14场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第15场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/16决赛（32强） 第16场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/8决赛 第1场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/8决赛 第2场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/8决赛 第3场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/8决赛 第4场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/8决赛 第5场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/8决赛 第6场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/8决赛 第7场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/8决赛 第8场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/4决赛 第1场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/4决赛 第2场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/4决赛 第3场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 1/4决赛 第4场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 半决赛 第1场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 半决赛 第2场
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 三四名决赛
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div>
 
           <div class="template-row">
             TBD · 决赛
-            <strong>TBD vs TBD</strong>
+            <strong>待定 vs 待定</strong>
           </div></div>
       </details>
 

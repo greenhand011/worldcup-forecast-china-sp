@@ -151,7 +151,7 @@ def test_build_review_splits_pending_and_settled(tmp_path):
         "TBD,1/8决赛 第1场,Brazil,Norway,true,2.00,4.00,5.00,H\n",
         encoding="utf-8",
     )
-    review = china_sp.build_review(path, FakeModel(), calibrator=identity)
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-01")
     assert review["summary"]["pending_count"] == 1
     assert review["summary"]["settled_count"] == 1
     assert review["summary"]["stage_count"] == {"小组赛 A组 第1轮": 1, "1/8决赛 第1场": 1}
@@ -186,7 +186,7 @@ def test_known_fixture_without_sp_stays_in_folded_template_section(tmp_path):
         "2026-07-05,1/8决赛 第1场,Brazil,Norway,true,2.00,4.00,5.00,\n",
         encoding="utf-8",
     )
-    review = china_sp.build_review(path, FakeModel(), calibrator=identity)
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-01")
     assert review["summary"]["raw_pending_count"] == 2
     assert review["summary"]["pending_count"] == 1
     assert review["summary"]["template_count"] == 1
@@ -220,4 +220,19 @@ def test_blank_sp_fixture_is_folded_instead_of_empty_main_card(tmp_path):
     html = china_sp.render_html(review)
     assert "未来预测 0" in html
     assert "待录入赛程模板 1" in html
-    assert "Brazil vs Norway" in html
+    assert "巴西 vs 挪威" in html
+
+
+def test_sp_match_on_or_before_review_date_waits_for_result(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-06,1/8决赛（公开SP）,Brazil,Norway,true,1.55,3.68,4.70,\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-06")
+    assert review["summary"]["pending_count"] == 0
+    assert review["summary"]["awaiting_result_count"] == 1
+    html = china_sp.render_html(review)
+    assert "待赛果复核 1" in html
+    assert "巴西 vs 挪威" in html
