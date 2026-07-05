@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">China SP review preview</title>
+  <desc id="desc">Preview card for the China Sports Lottery SP World Cup Review page.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="0.55" stop-color="#172033"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#202a3b"/>
+      <stop offset="1" stop-color="#151d2c"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <circle cx="1000" cy="92" r="210" fill="#22c55e" opacity="0.10"/>
+  <circle cx="180" cy="590" r="260" fill="#38bdf8" opacity="0.09"/>
+
+  <rect x="84" y="64" width="1032" height="547" rx="28" fill="#0b1220" stroke="#344055" filter="url(#shadow)"/>
+  <rect x="84" y="64" width="1032" height="72" rx="28" fill="#151e2e"/>
+  <circle cx="126" cy="101" r="9" fill="#f87171"/>
+  <circle cx="158" cy="101" r="9" fill="#fbbf24"/>
+  <circle cx="190" cy="101" r="9" fill="#34d399"/>
+  <text x="228" y="108" fill="#94a3b8" font-family="Segoe UI, Arial, sans-serif" font-size="22">worldcup-forecast-china-sp</text>
+
+  <text x="126" y="205" fill="#f8fafc" font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="44" font-weight="700">中国体彩 SP 世界杯复盘</text>
+  <text x="126" y="246" fill="#a7f3d0" font-family="Segoe UI, Arial, sans-serif" font-size="27" font-weight="600">China Sports Lottery SP World Cup Review</text>
+  <text x="126" y="284" fill="#94a3b8" font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="20">Manual SP review · model probabilities · fair odds · edge · P&amp;L</text>
+
+  <g transform="translate(126 326)">
+    <rect width="284" height="104" rx="14" fill="url(#card)" stroke="#334155"/>
+    <text x="24" y="38" fill="#94a3b8" font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="20">累计盈亏 / Total P&amp;L</text>
+    <text x="24" y="78" fill="#34d399" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">+0 元</text>
+  </g>
+  <g transform="translate(456 326)">
+    <rect width="284" height="104" rx="14" fill="url(#card)" stroke="#334155"/>
+    <text x="24" y="38" fill="#94a3b8" font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="20">待开奖 / Pending</text>
+    <text x="24" y="78" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">1</text>
+  </g>
+  <g transform="translate(786 326)">
+    <rect width="284" height="104" rx="14" fill="url(#card)" stroke="#334155"/>
+    <text x="24" y="38" fill="#94a3b8" font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="20">历史复盘 / Historical Review</text>
+    <text x="24" y="78" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">0</text>
+  </g>
+
+  <g transform="translate(126 462)">
+    <rect width="944" height="102" rx="16" fill="#172033" stroke="#334155"/>
+    <text x="24" y="38" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="27" font-weight="700">Brazil vs Norway</text>
+    <text x="24" y="72" fill="#94a3b8" font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="20">模型概率 49.3 / 29.0 / 21.7 · SP 1.83 / 3.77 / 4.88</text>
+    <rect x="741" y="27" width="172" height="48" rx="24" fill="#0f766e" opacity="0.92"/>
+    <text x="777" y="58" fill="#ecfeff" font-family="Microsoft YaHei, Segoe UI, Arial, sans-serif" font-size="20" font-weight="700">待开奖</text>
+  </g>
+</svg>

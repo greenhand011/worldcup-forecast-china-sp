@@ -1,10 +1,10 @@
-"""Command-line interface: ``wcforecast {forecast,predict,validate,odds}``."""
+"""Command-line interface: ``wcforecast {forecast,predict,validate,odds,china-sp-review}``."""
 from __future__ import annotations
 
 import argparse
 
 
-from . import data, markets, predict
+from . import china_sp, data, markets, predict
 from . import model as model_mod
 from . import ratings, simulate
 from .teams import HOSTS, INDEX
@@ -85,6 +85,15 @@ def cmd_odds(args):
               f"   {ph:.2f}/{pd_:.2f}/{pa:.2f}")
 
 
+def cmd_china_sp_review(args):
+    m, _ = _build_2026_model(refit=False)
+    review = china_sp.build_review(args.input, m, bankroll=args.bankroll, unit=args.unit)
+    output = china_sp.write_html(review, args.output)
+    print()
+    print(china_sp.format_console_table(review))
+    print(f"\n已生成静态网页：{output}")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="wcforecast",
                                  description="Structural + Bayesian World Cup forecaster.")
@@ -109,6 +118,13 @@ def main(argv=None):
     o = sub.add_parser("odds", help="live bookmaker consensus odds (needs ODDS_API_KEY)")
     o.add_argument("--regions", default="eu,uk")
     o.set_defaults(func=cmd_odds)
+
+    c = sub.add_parser("china-sp-review", help="中国体彩胜平负 SP 复盘网页")
+    c.add_argument("--input", default="data/china_sp_review.csv")
+    c.add_argument("--output", default="docs/china-sp-review.html")
+    c.add_argument("--bankroll", type=int, default=10000)
+    c.add_argument("--unit", type=int, default=100)
+    c.set_defaults(func=cmd_china_sp_review)
 
     args = ap.parse_args(argv)
     args.func(args)

@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>中国体彩 SP 世界杯复盘</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101318;
+      --panel: #191f27;
+      --panel-2: #202833;
+      --text: #eef3f7;
+      --muted: #9caab8;
+      --line: #303a46;
+      --green: #48d17d;
+      --red: #ff6b6b;
+      --gold: #f2c14e;
+      --cyan: #5bc0eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(135deg, rgba(91, 192, 235, .12), transparent 32rem),
+        radial-gradient(circle at 88% 8%, rgba(242, 193, 78, .12), transparent 18rem),
+        var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 36px 0 48px;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      padding: 22px 0 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      color: var(--gold);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 8px 0 10px;
+      font-size: clamp(30px, 4vw, 52px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+    .subtle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 760px;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 24px 0 30px;
+    }
+    .summary-item {
+      padding: 16px 18px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .summary-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .summary-item strong {
+      font-size: 30px;
+      line-height: 1.15;
+    }
+    h2.section-title {
+      margin: 34px 0 14px;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 16px;
+    }
+    .match-card {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, .22);
+    }
+    .match-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: start;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+    }
+    .date {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+    .match-title {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+    .match-title span {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 15px;
+      margin: 0 5px;
+    }
+    .badge {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--cyan);
+      white-space: nowrap;
+      font-size: 13px;
+      background: rgba(91, 192, 235, .08);
+    }
+    .badge.settled {
+      color: var(--gold);
+      background: rgba(242, 193, 78, .08);
+    }
+    .rows {
+      display: grid;
+      gap: 10px;
+    }
+    .metric {
+      display: grid;
+      grid-template-columns: 84px repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      align-items: center;
+      font-size: 14px;
+    }
+    .metric .label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .pill {
+      min-width: 0;
+      padding: 8px 9px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .045);
+      border: 1px solid rgba(255, 255, 255, .06);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .pill b {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      text-align: left;
+    }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .result {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .result div {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .result strong {
+      display: block;
+      color: var(--text);
+      font-size: 20px;
+      margin-top: 3px;
+    }
+    .empty {
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 22px;
+    }
+    .disclaimer {
+      margin-top: 36px;
+      padding: 18px 0 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+    @media (max-width: 720px) {
+      main { width: min(100% - 20px, 1180px); padding-top: 22px; }
+      .hero { grid-template-columns: 1fr; }
+      .summary { grid-template-columns: 1fr; }
+      .metric { grid-template-columns: 1fr; }
+      .pill { text-align: left; }
+      .result { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Manual SP Review</div>
+        <h1>中国体彩 SP 世界杯复盘</h1>
+        <p class="subtle">基于项目原有模型的校准胜平负概率，叠加用户手动录入的中国体彩竞彩足球胜平负 SP，用统一模拟本金复盘分配和结算。</p>
+      </div>
+    </section>
+
+    <section class="summary" aria-label="复盘汇总">
+      <div class="summary-item"><span>累计盈亏</span><strong class="pos">+0 元</strong></div>
+      <div class="summary-item"><span>已结算场次</span><strong>0</strong></div>
+      <div class="summary-item"><span>待开奖场次</span><strong>1</strong></div>
+    </section>
+
+    <h2 class="section-title">未来预测 / 待开奖</h2>
+    <section class="grid">
+      <article class="match-card">
+        <header class="match-head">
+          <div>
+            <div class="date">2026-07-05 · 中立场</div>
+            <h3 class="match-title">Brazil<span>vs</span>Norway</h3>
+          </div>
+          <div class="badge ">待开奖</div>
+        </header>
+        <div class="rows">
+          <div class="metric"><div class="label">模型概率</div><div class="pill "><b>主胜</b>49.3%</div><div class="pill "><b>平局</b>29.0%</div><div class="pill "><b>客胜</b>21.7%</div></div>
+          <div class="metric"><div class="label">体彩SP</div><div class="pill "><b>主胜</b>1.83</div><div class="pill "><b>平局</b>3.77</div><div class="pill "><b>客胜</b>4.88</div></div>
+          <div class="metric"><div class="label">公允赔率</div><div class="pill "><b>主胜</b>2.03</div><div class="pill "><b>平局</b>3.45</div><div class="pill "><b>客胜</b>4.62</div></div>
+          <div class="metric"><div class="label">模拟分配</div><div class="pill "><b>主胜</b>4,900 元</div><div class="pill "><b>平局</b>2,900 元</div><div class="pill "><b>客胜</b>2,200 元</div></div>
+          <div class="metric"><div class="label">单项edge</div><div class="pill neg"><b>主胜</b>-9.7%</div><div class="pill pos"><b>平局</b>+9.4%</div><div class="pill pos"><b>客胜</b>+5.7%</div></div>
+        </div>
+        <div class="result">
+          <div>实际结果<strong>待开奖</strong></div>
+          <div>盈亏<strong class="">待开奖</strong></div>
+        </div>
+      </article>
+</section>
+
+    <h2 class="section-title">历史复盘</h2>
+    <div class="empty">暂无已结算比赛。</div>
+
+    <footer class="disclaimer">
+      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。模型概率不是保证，历史盈亏不能证明长期存在 edge。
+    </footer>
+  </main>
+</body>
+</html>

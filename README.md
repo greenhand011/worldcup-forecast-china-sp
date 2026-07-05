@@ -1,217 +1,111 @@
-# worldcup-forecast
+# 中国体彩 SP 世界杯复盘 / China Sports Lottery SP World Cup Review
 
-**简体中文** | [English](README-EN.md)
+[Live Demo / 实时网页](https://greenhand011.github.io/worldcup-forecast-china-sp/) ·
+[Source / 源码](https://github.com/greenhand011/worldcup-forecast-china-sp)
 
-一个面向 FIFA 世界杯的结构化 + 贝叶斯预测器；同样重要的是，它也提供了一份
-**诚实、经过严格验证**的说明：到底哪些方法真的能改进国家队比赛预测。
+![China SP review preview](docs/assets/china-sp-review-preview.svg)
 
-*本项目受 Joachim Klement 的结构化世界杯模型启发。*
+## 项目简介 / Overview
 
-![Joachim Klement——连续三届精准预测世界杯冠军（2014 德国、2018 法国、2022 阿根廷）](joachim-klement.jpg)
+这是基于 `playmobil/worldcup-forecast` 改造的本地复盘项目。模型负责预测 90 分钟胜/平/负概率，
+中国体彩 SP 由用户手动录入，只用于复盘和期望收益计算，不作为模型输入。
 
-![python](https://img.shields.io/badge/python-3.10%2B-blue)
-![license](https://img.shields.io/badge/license-MIT-green)
-![tests](https://img.shields.io/badge/tests-passing-brightgreen)
+This project extends `playmobil/worldcup-forecast` with a China Sports Lottery SP review page.
+The model estimates 90-minute home/draw/away probabilities, while China Sports Lottery SP values
+are manually entered and used only for review and expected value analysis, not as model inputs.
 
-大多数世界杯模型会发布一份冠军榜和一个看起来很漂亮的准确率数字。这个项目则提供了
-**滚动向前验证框架**和一份**发现台账**，用显著性检验说明哪些想法有效、哪些无效，
-包括那些不太令人舒服的结论。核心结论本身也保持诚实：经过穷尽式搜索后，模型已经位于
-*结构效率前沿*，而博彩市场非常难以击败。
+## 功能 / Features
 
----
+- 读取手动录入的中国体彩胜平负 SP CSV。
+  Read manually entered China Sports Lottery home/draw/away SP values from CSV.
+- 计算模型概率、公允赔率、edge、模拟分配和盈亏。
+  Calculate model probabilities, fair odds, edge, simulated allocations, and P&L.
+- 生成静态 HTML 复盘页面。
+  Generate a static HTML review page.
+- 支持 GitHub Pages 在线展示。
+  Support online publishing through GitHub Pages.
+- 不包含自动下注、自动登录或购买彩票功能。
+  No automated betting, login, or lottery purchase functionality is included.
 
-## 2026 世界杯比赛预测结果（持续更新）
+## 快速开始 / Quick Start
 
-🔗 实时在线版：**[signana.com/worldcup/predictions](https://www.signana.com/worldcup/predictions)**
+Windows PowerShell:
 
-按双轨预测做的演示性下注记录：每场投注 $10,000，依模型预测概率分配到胜/平/负三个结果
-（最小单位 $100），并以该场实际结果对应的赔率结算。
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .
+wcforecast china-sp-review
+start docs\china-sp-review.html
+```
 
-| 对阵 | 模型 胜/平/负 % | 分配 胜/平/负 | 实际 | 赔率 | 盈亏 |
-|---|---|---|---|---|---|
-| 墨西哥–南非 | 63/24/12 | 6400/2400/1200 | 胜 | 1.44 | −784 |
-| 韩国–捷克 | 39/32/29 | 3900/3200/2900 | 胜 | 2.67 | +413 |
-| 加拿大–波黑 | 54/28/18 | 5400/2800/1800 | 平 | 3.64 | +192 |
-| 美国–巴拉圭 | 61/25/14 | 6100/2500/1400 | 胜 | 2.15 | +3,115 |
-| 卡塔尔–瑞士 | 13/26/61 | 1300/2600/6100 | 平 | 8.00 | +10,800 |
-| 巴西–摩洛哥 | 42/31/28 | 4100/3100/2800 | 平 | 3.92 | +2,152 |
-| 海地–苏格兰 | 19/30/51 | 1900/3000/5100 | 客胜 | 1.55 | −2,095 |
-| 澳大利亚–土耳其 | 26/31/43 | 2600/3100/4300 | 胜 | 5.71 | +4,846 |
-| 德国–库拉索 | 78/16/5 | 7900/1600/500 | 胜 | 1.06 | −1,626 |
-| 科特迪瓦–厄瓜多尔 | 30/32/37 | 3000/3200/3800 | 胜 | 3.79 | +1,370 |
-| 荷兰–日本 | 42/30/27 | 4300/3000/2700 | 平 | 3.64 | +920 |
-| 瑞典–突尼斯 | 45/31/23 | 4600/3100/2300 | 胜 | 1.97 | −938 |
-| 西班牙–佛得角 | 78/17/6 | 7700/1700/600 | 平 | 19.42 | +23,009 |
-| 比利时–埃及 | 53/29/19 | 5200/2900/1900 | 平 | 4.26 | +2,340 |
-| 沙特阿拉伯–乌拉圭 | 16/29/55 | 1600/2900/5500 | 平 | 4.65 | +3,488 |
-| 伊朗–新西兰 | 47/32/22 | 4600/3200/2200 | 平 | 3.64 | +1,635 |
-| 法国–塞内加尔 | 59/26/16 | 5800/2600/1600 | | | |
-| 伊拉克–挪威 | 16/28/55 | 1600/2800/5600 | | | |
-| 阿根廷–阿尔及利亚 | 56/27/17 | 5600/2700/1700 | | | |
-| 奥地利–约旦 | 57/28/15 | 5700/2800/1500 | | | |
-| **合计（16 场已结算）** | | | | | **+48,836** |
-
-> ⚠️ 温馨提示：下方盈亏只是**单一的演示性样本，并不能证明模型相对市场存在 edge**；真正的
-> 检验是即将加入的 CLV（收盘线价值）报告（见 [#2](https://github.com/playmobil/worldcup-forecast/issues/2)）。
-> 目前16场已结算，收益很大程度上来自异常高的平局率（16 场里有 8 场打平，
-> 远高于常态的约四分之一）；其中两场平局大冷门（西班牙–佛得角 @19.42，+$23,009； 
-> 卡塔尔–瑞士 @8.00，+$10,800）占了盈利约七成。对着庄家约 5.9% 的水位，该策略整体期望
-> 可能为负。
-
-## 它能做什么
-
-- **球队强度**：基于冻结的赛前 FIFA 快照、Transfermarkt 阵容身价、无泄漏 Elo，
-  并用 Klement 风格的结构先验包裹起来（GDP、人口、气候、主场优势、足球文化）。
-- **比赛模型**：带部分池化的分层贝叶斯 Poisson 模型（PyMC）——数据丰富的球队更多由
-  比赛结果牵引，数据稀缺的球队则收缩到结构先验。
-- **赛事模拟**：对官方 2026 赛制进行 Monte-Carlo 模拟（12 个小组、8 个成绩最好的
-  小组第三、73-104 淘汰赛映射），输出冠军和阶段概率。
-- **验证**：样本外滚动向前评分（log-loss / RPS / Brier），并使用配对 bootstrap
-  显著性检验；从不只用少量比赛来判断模型。
-- **市场基准**：Polymarket 和传统博彩公司赔率仅用于比较。根据设计中的独立性原则，
-  **市场数据绝不会作为模型输入**。
-
-## 快速开始
+macOS / Linux:
 
 ```bash
-git clone <repo-url> && cd worldcup-forecast
-pip install -e .                 # 或者：make install
-
-wcforecast forecast              # 2026 冠军概率（双轨）
-wcforecast predict Brazil Morocco
-wcforecast validate              # 带显著性检验的样本外评分表
-ODDS_API_KEY=xxxx wcforecast odds   # 实时博彩公司共识（可选，需要免费 key）
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+wcforecast china-sp-review
+open docs/china-sp-review.html
 ```
 
-需要 Python >= 3.10。首次运行会自动下载公开比赛和排名数据集；小型的冻结 2026 输入
-已随项目放在 `data/snapshots/` 中。
+## CSV 数据格式 / CSV Format
 
-## 示例输出
+编辑 `data/china_sp_review.csv`，每行一场比赛：
 
-```
-2026 World Cup — champion probability (Monte Carlo)
-
-  team                      accuracy %  independent %
-  France                          13.8           13.3
-  Spain                           12.9           11.4
-  England                         11.4           11.3
-  Argentina                        8.6            9.9
-  United States                    6.7            7.7
-  ...
+```csv
+date,home,away,neutral,sp_home,sp_draw,sp_away,actual
+2026-07-05,Brazil,Norway,true,1.83,3.77,4.88,
 ```
 
-项目会并排报告两条轨道：
-- **accuracy**：完整模型（FIFA + 阵容身价锚点 + 比赛数据）；
-- **independent**：仅结构化（“Klement”）先验，不含市场数据，且可解释。
+字段 / Fields:
 
-二者之间的差异是*需要解释的特征*，不是需要隐藏的错误。
+- `date`: 比赛日期 / match date.
+- `home`: 主队英文名，需匹配项目球队名 / home team name recognized by the project.
+- `away`: 客队英文名，需匹配项目球队名 / away team name recognized by the project.
+- `neutral`: `true` 或 `false` / whether the match is played at a neutral venue.
+- `sp_home`: 中国体彩主胜 SP / China Sports Lottery home-win SP.
+- `sp_draw`: 中国体彩平局 SP / China Sports Lottery draw SP.
+- `sp_away`: 中国体彩主负/客胜 SP / China Sports Lottery away-win SP.
+- `actual`: `H` / `D` / `A`，未开奖留空 / leave blank before settlement.
 
-## 诚实发现：这个项目最独特的部分
+`actual = H/D/A`: `H = home win`, `D = draw`, `A = away win`.
 
-每个候选想法都在一个**锁定的 305 场比赛窗口（2024-2026）**上做过样本外测试，
-并使用配对 bootstrap 检验显著性。完整台账见：
-[`docs/FINDINGS.md`](docs/FINDINGS.md)。
+## 方法说明 / Method
 
-| 想法 | 结论 |
-|---|---|
-| 无泄漏 Elo（K=40）+ 结构先验 | ✅ 稳健基线 |
-| 温度校准 + 中立场平局提升 | ✅ 小幅但显著 |
-| 模型平均（Bayesian + Elo-logit） | ✅ 降低方差 |
-| 阵容身价作为强度锚点 | ✅ 有助于 2026 预测（在强弱悬殊比赛上，与敏锐市场的距离约缩小 30%） |
-| FIFA vs Elo 锚点 | ➖ 平手（FIFA 的价值在于数据质量，而不是额外信号） |
-| 额外特征（状态、休息、洲际足联） | ➖ 没有显著收益 |
-| 历史交手记录 | ❌ 控制强度后几乎为零 |
-| Dixon-Coles 低比分修正 | ❌ 在这份数据上 rho 约为 0 |
-| 梯度提升（LightGBM）集成与 isotonic 校准 | ❌ 对稀疏数据过拟合，显著更差 |
+The review uses the project's existing calibrated 1X2 model probabilities. China Sports Lottery SP
+values are applied only after prediction, for review and expected value display.
 
-**一句话结论：** 简单、低方差的改动有帮助；灵活、复杂的方法容易在国家队数据上过拟合。
-模型已经到达结构前沿——单场世界杯比赛结果大约有一半来自运气，而市场很难击败。
-这个结论本身就是产品的一部分。
+复盘使用项目原有的校准胜平负概率。中国体彩 SP 只在预测之后用于复盘展示和期望收益计算。
 
-## 如何借鉴 Klement 的结构化思路
-
-Joachim Klement 的核心观点是：国家队实力主要是**结构性**的——不靠球星名气，而是看缓慢
-变化的国家变量、赛事自身的对阵路径，再加上一定的运气。本项目正是把这些输入原封不动地
-作为一份**无泄漏的结构先验**（即 `independent` 轨道），再让比赛结果通过部分池化去修正
-它。他模型所看的每一项数据，都对应到 `ratings.structural_index` / `simulate.py` 里的一个
-具体项：
-
-| Klement 看的数据 | 本项目的实现方式 |
-|---|---|
-| FIFA 排名 | 标准化后的 FIFA 积分作为当前实力**锚点**，赛前冻结（2026 赛事再与 Transfermarkt 阵容身价混合）。 |
-| 人口规模 | `log10(人口)` 的「人才库规模」项，外加人口 × 足球文化的交互项——人口红利只在真正踢球的国家才生效。 |
-| 人均 GDP | `log10(GDP)` 的**倒 U 形**（经济发展有帮助，但到一定程度后趋平）；系数靠先验推理设定，而非拟合。 |
-| 足球在社会中的重要程度 | 一个无泄漏的**足球文化**代理：一半看历届世界杯出场、一半看长期 Elo。 |
-| 气候和比赛环境 | 年均气温的**倒 U 形**（偏离温带最优值则扣分），外加东道主加成。 |
-| 分组及淘汰赛路径 | 对**官方 2026 赛制**做 Monte-Carlo——真实抽签：12 个小组 → 前两名 + 8 个最佳小组第三（按资格匹配）→ 32 强……决赛。 |
-| 一定程度的随机因素 | 每场比赛的 Poisson 进球噪声、淘汰赛里约 ⅓ 强度的加时与点球掷硬币，以及每次模拟都抽取一组全新的后验样本。 |
-
-**在 Klement 之上更进一步。** 这份结构先验是一个分层贝叶斯 Poisson 模型的**收缩目标**——
-数据丰富的球队向自己的比赛结果靠拢，数据稀缺的球队则留在先验附近——并额外引入无泄漏
-Elo 与阵容身价作为锚点。所有系数都由先验推理设定，绝不在仅约 36 行的世界杯历史上拟合
-（那样会得出诸如「GDP 系数为负」之类的荒谬结果）。而且每一项改动都在样本外用显著性检验
-验证过——见上文的「诚实发现」。
-
-## 工作原理
-
-完整方法论和设计取舍见 [`docs/DESIGN.md`](docs/DESIGN.md)
-（为什么使用部分池化、为什么市场只作为基准、如何避免数据泄漏）。
-
-## 项目结构
-
-```
-worldcup-forecast/
-├── src/wcforecast/
-│   ├── teams.py        # 48 支球队、官方抽签、洲际足联
-│   ├── data.py         # 无泄漏加载器（martj42、FIFA、阵容、World Bank）
-│   ├── ratings.py      # Elo + 结构化（Klement）先验指数
-│   ├── model.py        # 分层贝叶斯 Poisson（PyMC）
-│   ├── predict.py      # 比分网格 1X2 + 校准
-│   ├── simulate.py     # 官方赛程结构 + Monte Carlo 冠军赔率
-│   ├── validate.py     # 滚动向前样本外框架 + 指标 + 显著性
-│   ├── markets.py      # Polymarket + 博彩公司赔率（仅作基准）
-│   └── cli.py          # `wcforecast` 命令行接口
-├── tests/              # 快速、离线的单元测试
-├── docs/               # DESIGN.md（方法论）+ FINDINGS.md（已验证台账）
-└── data/               # 冻结的 2026 快照（已提交）+ 缓存（git 忽略）
+```text
+fair_odds = 1 / probability
+edge = probability * SP - 1
+pnl = allocation_on_actual * sp_actual - bankroll
 ```
 
-## 作为库使用
+默认每场模拟本金为 `10000` 元，最小分配单位为 `100` 元。金额按模型概率分配到主胜、平局、
+客胜三项，四舍五入后如有差额，加到概率最高的一项。
 
-```python
-from wcforecast import data, ratings, model, simulate, predict
+By default, each match uses a simulated bankroll of `10000` yuan and a minimum allocation unit of
+`100` yuan. The bankroll is allocated across home/draw/away by model probability; any rounding
+residual is assigned to the most likely outcome.
 
-results = data.load_results()
-s = ratings.structural_index("2026-06-11", results,
-                             fifa=data.load_fifa_snapshot(),
-                             squad=data.load_squad_values())
-matches = data.load_matches(start="2006-01-01", cutoff="2026-06-11")
-m = model.fit(matches, s, weights=ratings.recency_weights(matches, "2026-06-11"),
-              dixon_coles=True)
+## 免责声明 / Disclaimer
 
-simulate.champion_probabilities(m, s, n_sims=20000).head()
-predict.calibrate(m.match_probs("Brazil", "Morocco", home_advantage=0.0))
-```
+本项目仅用于模型学习、复盘和数据分析，不构成投注建议。中国体彩 SP 需要用户手动录入。
+模型概率不是保证，历史盈亏不能证明长期存在 edge。请遵守所在地法律法规，理性对待风险。
 
-## 设计原则：独立于市场
+This project is for model learning, review, and data analysis only. It is not betting advice.
+China Sports Lottery SP values must be entered manually. Model probabilities are not guarantees,
+and historical P&L does not prove a persistent edge. Please follow local laws and regulations and
+treat risk responsibly.
 
-模型从不读取博彩赔率（无论是作为特征、校准目标，还是集成成员）。它的目的在于提供一个
-*独立、可解释的结构化信号*；市场只用于基准比较。击败市场**不是**目标——验证结果也确认，
-这件事本来就非常困难。
+## 致谢 / Credits
 
-## 局限
+本项目基于 `playmobil/worldcup-forecast` 的结构化 + 贝叶斯世界杯预测模型进行改造。
+原模型逻辑、训练流程和市场独立性原则保持不变；本仓库新增的是中国体彩 SP 手动复盘展示层。
 
-- 单场比赛预测的上限较低（很多结果来自运气）；详见 FINDINGS。
-- 阵容身价和 FIFA 快照都是单一的 2026 快照——用于向前预测，而不是历史回测
-  （因为没有可用历史）。
-- 免费博彩公司赔率层级只覆盖实时赔率，因此用于*历史*验证的市场基准只能比较结果，
-  不能比较历史价格。
-
-## 许可证
-
-MIT — 见 [`LICENSE`](LICENSE)。
-
-## 致谢
-
-受 Joachim Klement 的结构化世界杯模型启发。数据来源：martj42/international_results、
-Dato-Futbol/fifa-ranking、FIFA、Transfermarkt、World Bank、Polymarket、The Odds API。
+This project is adapted from the structural + Bayesian World Cup forecaster in
+`playmobil/worldcup-forecast`. The original model logic, training flow, and market-independence
+principle are preserved; this repository adds a manual China Sports Lottery SP review layer.
