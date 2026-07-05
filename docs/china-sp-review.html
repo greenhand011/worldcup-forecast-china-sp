@@ -3,263 +3,750 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>中国体彩 SP 世界杯复盘</title>
+  <title>中国体彩 SP 世界杯预测</title>
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #101318;
-      --panel: #191f27;
-      --panel-2: #202833;
-      --text: #eef3f7;
-      --muted: #9caab8;
-      --line: #303a46;
-      --green: #48d17d;
-      --red: #ff6b6b;
-      --gold: #f2c14e;
-      --cyan: #5bc0eb;
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #d9e0e8;
+      --soft-line: #edf1f5;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --green: #159957;
+      --green-soft: #eaf8f0;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --amber: #b45309;
+      --shadow: 0 10px 30px rgba(31, 41, 55, 0.08);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
-      background:
-        linear-gradient(135deg, rgba(91, 192, 235, .12), transparent 32rem),
-        radial-gradient(circle at 88% 8%, rgba(242, 193, 78, .12), transparent 18rem),
-        var(--bg);
+      background: var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
       letter-spacing: 0;
     }
     main {
-      width: min(1180px, calc(100% - 32px));
+      width: min(980px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 36px 0 48px;
+      padding: 22px 0 44px;
     }
-    .hero {
+    .topbar {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 24px;
-      align-items: end;
-      padding: 22px 0 28px;
-      border-bottom: 1px solid var(--line);
-    }
-    .eyebrow {
-      color: var(--gold);
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 0 16px;
     }
     h1 {
-      margin: 8px 0 10px;
-      font-size: clamp(30px, 4vw, 52px);
-      line-height: 1.05;
+      margin: 0 0 6px;
+      font-size: clamp(24px, 3.4vw, 34px);
+      line-height: 1.16;
       letter-spacing: 0;
     }
-    .subtle {
+    .subtitle {
       margin: 0;
       color: var(--muted);
-      line-height: 1.7;
-      max-width: 760px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .github-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      background: var(--card);
+      text-decoration: none;
+      font-weight: 700;
+      box-shadow: 0 2px 10px rgba(31, 41, 55, 0.05);
+      white-space: nowrap;
     }
     .summary {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin: 24px 0 30px;
+      grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 8px 0 24px;
     }
     .summary-item {
-      padding: 16px 18px;
-      background: var(--panel);
+      min-height: 76px;
+      padding: 13px 15px;
       border: 1px solid var(--line);
       border-radius: 8px;
+      background: var(--card);
+      box-shadow: var(--shadow);
     }
     .summary-item span {
       display: block;
       color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 6px;
+      font-size: 12px;
+      margin-bottom: 7px;
     }
     .summary-item strong {
-      font-size: 30px;
-      line-height: 1.15;
+      display: block;
+      font-size: 24px;
+      line-height: 1.1;
     }
-    h2.section-title {
-      margin: 34px 0 14px;
-      font-size: 22px;
+    .summary-item.profit strong {
+      color: var(--green);
+      font-size: 30px;
+    }
+    .summary-item.profit.negative strong { color: var(--red); }
+    .section-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 24px 0 12px;
+    }
+    .section-heading h2 {
+      margin: 0;
+      font-size: 20px;
       letter-spacing: 0;
     }
-    .grid {
+    .section-heading span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
     }
     .match-card {
-      background: linear-gradient(180deg, var(--panel), var(--panel-2));
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 18px;
-      box-shadow: 0 18px 50px rgba(0, 0, 0, .22);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      padding: 14px;
     }
     .match-head {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 14px;
+      gap: 10px;
       align-items: start;
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 14px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
     .date {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
       margin-bottom: 5px;
     }
     .match-title {
       margin: 0;
-      font-size: 22px;
-      line-height: 1.2;
+      font-size: 18px;
+      line-height: 1.25;
       overflow-wrap: anywhere;
     }
     .match-title span {
       color: var(--muted);
-      font-weight: 500;
-      font-size: 15px;
-      margin: 0 5px;
-    }
-    .badge {
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 6px 10px;
-      color: var(--cyan);
-      white-space: nowrap;
       font-size: 13px;
-      background: rgba(91, 192, 235, .08);
+      font-weight: 500;
+      margin: 0 6px;
     }
-    .badge.settled {
-      color: var(--gold);
-      background: rgba(242, 193, 78, .08);
-    }
-    .rows {
-      display: grid;
-      gap: 10px;
-    }
-    .metric {
-      display: grid;
-      grid-template-columns: 84px repeat(3, minmax(0, 1fr));
-      gap: 8px;
+    .status {
+      display: inline-flex;
       align-items: center;
-      font-size: 14px;
+      min-height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
     }
-    .metric .label {
+    .status.pending {
+      color: var(--blue);
+      background: var(--blue-soft);
+      border: 1px solid #c7ddff;
+    }
+    .status.positive {
+      color: var(--green);
+      background: var(--green-soft);
+      border: 1px solid #bfe8ce;
+    }
+    .status.negative {
+      color: var(--red);
+      background: var(--red-soft);
+      border: 1px solid #fecaca;
+    }
+    .bet-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .bet-column {
+      min-width: 0;
+      padding: 10px 9px;
+      border: 1px solid var(--soft-line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+    .bet-column.hit {
+      background: var(--green-soft);
+      border-color: #bfe8ce;
+    }
+    .bet-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .marker {
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 22px;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .amount {
+      font-size: 18px;
+      line-height: 1.1;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+    .sp {
+      margin-top: 5px;
       color: var(--muted);
       font-size: 13px;
+      font-weight: 700;
     }
-    .pill {
-      min-width: 0;
-      padding: 8px 9px;
+    .model-details {
+      margin-top: 12px;
+      border-top: 1px solid var(--soft-line);
+      padding-top: 10px;
+    }
+    .model-details summary {
+      cursor: pointer;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 800;
+      list-style-position: inside;
+    }
+    .detail-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .detail-row {
+      display: grid;
+      grid-template-columns: 78px repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      align-items: center;
+      font-size: 12px;
+    }
+    .detail-label {
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .detail-value {
+      padding: 6px;
       border-radius: 6px;
-      background: rgba(255, 255, 255, .045);
-      border: 1px solid rgba(255, 255, 255, .06);
+      background: #f8fafc;
       text-align: right;
       white-space: nowrap;
     }
-    .pill b {
+    .detail-value b {
       display: block;
       color: var(--muted);
-      font-size: 11px;
-      font-weight: 600;
-      margin-bottom: 2px;
+      font-size: 10px;
+      font-weight: 700;
       text-align: left;
+      margin-bottom: 2px;
     }
-    .pos { color: var(--green); }
-    .neg { color: var(--red); }
-    .result {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--line);
-    }
-    .result div {
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .result strong {
-      display: block;
-      color: var(--text);
-      font-size: 20px;
-      margin-top: 3px;
-    }
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
     .empty {
-      color: var(--muted);
+      padding: 20px;
       border: 1px dashed var(--line);
       border-radius: 8px;
-      padding: 22px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.65);
     }
     .disclaimer {
-      margin-top: 36px;
-      padding: 18px 0 0;
+      margin-top: 28px;
+      padding-top: 16px;
       border-top: 1px solid var(--line);
       color: var(--muted);
+      font-size: 13px;
       line-height: 1.7;
-      font-size: 14px;
     }
-    @media (max-width: 720px) {
-      main { width: min(100% - 20px, 1180px); padding-top: 22px; }
-      .hero { grid-template-columns: 1fr; }
+    @media (max-width: 760px) {
+      main { width: min(100% - 20px, 980px); }
+      .topbar { grid-template-columns: 1fr; }
+      .github-link { justify-self: start; }
+      .summary { grid-template-columns: 1fr 1fr; }
+      .summary-item.profit { grid-column: 1 / -1; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 460px) {
       .summary { grid-template-columns: 1fr; }
-      .metric { grid-template-columns: 1fr; }
-      .pill { text-align: left; }
-      .result { grid-template-columns: 1fr; }
+      .bet-grid { grid-template-columns: 1fr; }
+      .detail-row { grid-template-columns: 1fr; }
+      .detail-value { text-align: left; }
     }
   </style>
 </head>
 <body>
   <main>
-    <section class="hero">
+    <header class="topbar">
       <div>
-        <div class="eyebrow">Manual SP Review</div>
-        <h1>中国体彩 SP 世界杯复盘</h1>
-        <p class="subtle">基于项目原有模型的校准胜平负概率，叠加用户手动录入的中国体彩竞彩足球胜平负 SP，用统一模拟本金复盘分配和结算。</p>
+        <h1>中国体彩 SP 世界杯预测</h1>
+        <p class="subtitle">基于模型概率 + 用户手动录入中国体彩胜平负 SP 的复盘页面</p>
+      </div>
+      <a class="github-link" href="https://github.com/greenhand011/worldcup-forecast-china-sp">GitHub</a>
+    </header>
+
+    <section class="summary" aria-label="复盘汇总">
+      <div class="summary-item profit negative">
+        <span>累计收益</span>
+        <strong>-¥5,965.0</strong>
+      </div>
+      <div class="summary-item">
+        <span>已结算场次</span>
+        <strong>8</strong>
+      </div>
+      <div class="summary-item">
+        <span>待开奖场次</span>
+        <strong>2</strong>
+      </div>
+      <div class="summary-item">
+        <span>盈利场次率</span>
+        <strong>25.0%</strong>
       </div>
     </section>
 
-    <section class="summary" aria-label="复盘汇总">
-      <div class="summary-item"><span>累计盈亏</span><strong class="pos">+0 元</strong></div>
-      <div class="summary-item"><span>已结算场次</span><strong>0</strong></div>
-      <div class="summary-item"><span>待开奖场次</span><strong>1</strong></div>
+    <section>
+      <div class="section-heading">
+        <h2>未来预测 2</h2>
+        <span>actual 留空的比赛</span>
+      </div>
+      <div class="card-grid">
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-07-05</div>
+              <h3 class="match-title">Brazil<span>vs</span>Norway</h3>
+            </div>
+            <span class="status pending">待开奖</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥4,900</div>
+              <div class="sp">@1.83</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥2,900</div>
+              <div class="sp">@3.77</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥2,200</div>
+              <div class="sp">@4.88</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>49.3%</div><div class="detail-value"><b>平局</b>29.0%</div><div class="detail-value"><b>客胜</b>21.7%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.03</div><div class="detail-value"><b>平局</b>3.45</div><div class="detail-value"><b>客胜</b>4.62</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-9.7%</div><div class="detail-value positive"><b>平局</b>+9.4%</div><div class="detail-value positive"><b>客胜</b>+5.7%</div></div>
+            </div>
+          </details>
+        </article>
+
+
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-07-06</div>
+              <h3 class="match-title">Mexico<span>vs</span>England</h3>
+            </div>
+            <span class="status pending">待开奖</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥2,300</div>
+              <div class="sp">@5.60</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥2,900</div>
+              <div class="sp">@3.95</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥4,800</div>
+              <div class="sp">@1.66</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>23.3%</div><div class="detail-value"><b>平局</b>29.2%</div><div class="detail-value"><b>客胜</b>47.5%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>4.29</div><div class="detail-value"><b>平局</b>3.43</div><div class="detail-value"><b>客胜</b>2.11</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value positive"><b>主胜</b>+30.7%</div><div class="detail-value positive"><b>平局</b>+15.2%</div><div class="detail-value negative"><b>客胜</b>-21.2%</div></div>
+            </div>
+          </details>
+        </article>
+</div>
     </section>
 
-    <h2 class="section-title">未来预测 / 待开奖</h2>
-    <section class="grid">
-      <article class="match-card">
-        <header class="match-head">
-          <div>
-            <div class="date">2026-07-05 · 中立场</div>
-            <h3 class="match-title">Brazil<span>vs</span>Norway</h3>
-          </div>
-          <div class="badge ">待开奖</div>
-        </header>
-        <div class="rows">
-          <div class="metric"><div class="label">模型概率</div><div class="pill "><b>主胜</b>49.3%</div><div class="pill "><b>平局</b>29.0%</div><div class="pill "><b>客胜</b>21.7%</div></div>
-          <div class="metric"><div class="label">体彩SP</div><div class="pill "><b>主胜</b>1.83</div><div class="pill "><b>平局</b>3.77</div><div class="pill "><b>客胜</b>4.88</div></div>
-          <div class="metric"><div class="label">公允赔率</div><div class="pill "><b>主胜</b>2.03</div><div class="pill "><b>平局</b>3.45</div><div class="pill "><b>客胜</b>4.62</div></div>
-          <div class="metric"><div class="label">模拟分配</div><div class="pill "><b>主胜</b>4,900 元</div><div class="pill "><b>平局</b>2,900 元</div><div class="pill "><b>客胜</b>2,200 元</div></div>
-          <div class="metric"><div class="label">单项edge</div><div class="pill neg"><b>主胜</b>-9.7%</div><div class="pill pos"><b>平局</b>+9.4%</div><div class="pill pos"><b>客胜</b>+5.7%</div></div>
-        </div>
-        <div class="result">
-          <div>实际结果<strong>待开奖</strong></div>
-          <div>盈亏<strong class="">待开奖</strong></div>
-        </div>
-      </article>
-</section>
+    <section>
+      <div class="section-heading">
+        <h2>历史复盘 8</h2>
+        <span>actual = H / D / A 的比赛</span>
+      </div>
+      <div class="card-grid">
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-06-20</div>
+              <h3 class="match-title">Paraguay<span>vs</span>France</h3>
+            </div>
+            <span class="status negative">实际 客胜 -¥285.0</span>
+          </header>
+          <div class="bet-grid">
 
-    <h2 class="section-title">历史复盘</h2>
-    <div class="empty">暂无已结算比赛。</div>
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥1,100</div>
+              <div class="sp">@7.80</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥2,200</div>
+              <div class="sp">@4.45</div>
+            </div>
+
+            <div class="bet-column hit">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥6,700</div>
+              <div class="sp">@1.45</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>10.6%</div><div class="detail-value"><b>平局</b>22.4%</div><div class="detail-value"><b>客胜</b>67.0%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>9.47</div><div class="detail-value"><b>平局</b>4.46</div><div class="detail-value"><b>客胜</b>1.49</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-17.6%</div><div class="detail-value negative"><b>平局</b>-0.2%</div><div class="detail-value negative"><b>客胜</b>-2.8%</div></div>
+            </div>
+          </details>
+        </article>
+
+
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-06-21</div>
+              <h3 class="match-title">Canada<span>vs</span>Morocco</h3>
+            </div>
+            <span class="status negative">实际 平局 -¥142.0</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥2,800</div>
+              <div class="sp">@2.72</div>
+            </div>
+
+            <div class="bet-column hit">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥3,100</div>
+              <div class="sp">@3.18</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥4,100</div>
+              <div class="sp">@2.63</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>27.7%</div><div class="detail-value"><b>平局</b>31.2%</div><div class="detail-value"><b>客胜</b>41.1%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>3.61</div><div class="detail-value"><b>平局</b>3.21</div><div class="detail-value"><b>客胜</b>2.43</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-24.6%</div><div class="detail-value negative"><b>平局</b>-0.9%</div><div class="detail-value positive"><b>客胜</b>+8.2%</div></div>
+            </div>
+          </details>
+        </article>
+
+
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-06-22</div>
+              <h3 class="match-title">Colombia<span>vs</span>Ghana</h3>
+            </div>
+            <span class="status positive">实际 主胜 +¥282.0</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column hit">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥5,300</div>
+              <div class="sp">@1.94</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥2,900</div>
+              <div class="sp">@3.36</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥1,800</div>
+              <div class="sp">@4.05</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>53.7%</div><div class="detail-value"><b>平局</b>28.7%</div><div class="detail-value"><b>客胜</b>17.6%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>1.86</div><div class="detail-value"><b>平局</b>3.49</div><div class="detail-value"><b>客胜</b>5.67</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value positive"><b>主胜</b>+4.1%</div><div class="detail-value negative"><b>平局</b>-3.6%</div><div class="detail-value negative"><b>客胜</b>-28.6%</div></div>
+            </div>
+          </details>
+        </article>
+
+
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-06-23</div>
+              <h3 class="match-title">Argentina<span>vs</span>Cape Verde</h3>
+            </div>
+            <span class="status negative">实际 主胜 -¥850.0</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column hit">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥7,500</div>
+              <div class="sp">@1.22</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥1,800</div>
+              <div class="sp">@5.80</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥700</div>
+              <div class="sp">@10.50</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>75.0%</div><div class="detail-value"><b>平局</b>18.4%</div><div class="detail-value"><b>客胜</b>6.6%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>1.33</div><div class="detail-value"><b>平局</b>5.44</div><div class="detail-value"><b>客胜</b>15.22</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-8.4%</div><div class="detail-value positive"><b>平局</b>+6.6%</div><div class="detail-value negative"><b>客胜</b>-31.0%</div></div>
+            </div>
+          </details>
+        </article>
+
+
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-06-24</div>
+              <h3 class="match-title">Australia<span>vs</span>Egypt</h3>
+            </div>
+            <span class="status negative">实际 客胜 -¥976.0</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥3,500</div>
+              <div class="sp">@2.58</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥3,300</div>
+              <div class="sp">@3.20</div>
+            </div>
+
+            <div class="bet-column hit">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥3,200</div>
+              <div class="sp">@2.82</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>35.3%</div><div class="detail-value"><b>平局</b>32.5%</div><div class="detail-value"><b>客胜</b>32.1%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.83</div><div class="detail-value"><b>平局</b>3.07</div><div class="detail-value"><b>客胜</b>3.11</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-8.9%</div><div class="detail-value positive"><b>平局</b>+4.1%</div><div class="detail-value negative"><b>客胜</b>-9.3%</div></div>
+            </div>
+          </details>
+        </article>
+
+
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-06-25</div>
+              <h3 class="match-title">Switzerland<span>vs</span>Algeria</h3>
+            </div>
+            <span class="status positive">实际 平局 +¥168.0</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥4,100</div>
+              <div class="sp">@2.06</div>
+            </div>
+
+            <div class="bet-column hit">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥3,100</div>
+              <div class="sp">@3.28</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥2,800</div>
+              <div class="sp">@3.72</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>40.3%</div><div class="detail-value"><b>平局</b>31.3%</div><div class="detail-value"><b>客胜</b>28.4%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.48</div><div class="detail-value"><b>平局</b>3.19</div><div class="detail-value"><b>客胜</b>3.52</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-17.1%</div><div class="detail-value positive"><b>平局</b>+2.8%</div><div class="detail-value positive"><b>客胜</b>+5.7%</div></div>
+            </div>
+          </details>
+        </article>
+
+
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-06-26</div>
+              <h3 class="match-title">Portugal<span>vs</span>Croatia</h3>
+            </div>
+            <span class="status negative">实际 主胜 -¥2,002.0</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column hit">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥4,300</div>
+              <div class="sp">@1.86</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥3,000</div>
+              <div class="sp">@3.44</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥2,700</div>
+              <div class="sp">@4.40</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>43.1%</div><div class="detail-value"><b>平局</b>30.3%</div><div class="detail-value"><b>客胜</b>26.6%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.32</div><div class="detail-value"><b>平局</b>3.30</div><div class="detail-value"><b>客胜</b>3.76</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-19.9%</div><div class="detail-value positive"><b>平局</b>+4.3%</div><div class="detail-value positive"><b>客胜</b>+17.2%</div></div>
+            </div>
+          </details>
+        </article>
+
+
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">2026-06-27</div>
+              <h3 class="match-title">Spain<span>vs</span>Austria</h3>
+            </div>
+            <span class="status negative">实际 客胜 -¥2,160.0</span>
+          </header>
+          <div class="bet-grid">
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">主</span>主胜下注</div>
+              <div class="amount">¥5,800</div>
+              <div class="sp">@1.72</div>
+            </div>
+
+            <div class="bet-column">
+              <div class="bet-label"><span class="marker">平</span>平局下注</div>
+              <div class="amount">¥2,600</div>
+              <div class="sp">@3.62</div>
+            </div>
+
+            <div class="bet-column hit">
+              <div class="bet-label"><span class="marker">客</span>客胜下注</div>
+              <div class="amount">¥1,600</div>
+              <div class="sp">@4.90</div>
+            </div>
+          </div>
+
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>58.0%</div><div class="detail-value"><b>平局</b>25.9%</div><div class="detail-value"><b>客胜</b>16.0%</div></div>
+              <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>1.72</div><div class="detail-value"><b>平局</b>3.85</div><div class="detail-value"><b>客胜</b>6.23</div></div>
+              <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-0.2%</div><div class="detail-value negative"><b>平局</b>-6.1%</div><div class="detail-value negative"><b>客胜</b>-21.4%</div></div>
+            </div>
+          </details>
+        </article>
+</div>
+    </section>
 
     <footer class="disclaimer">
-      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。模型概率不是保证，历史盈亏不能证明长期存在 edge。
+      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。示例 SP 和赛果只是 demo 占位，不代表官方中国体彩数据。模型概率不是保证，历史盈亏不能证明长期存在 edge。
     </footer>
   </main>
 </body>

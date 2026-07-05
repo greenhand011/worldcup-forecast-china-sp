@@ -14,6 +14,34 @@ This project extends `playmobil/worldcup-forecast` with a China Sports Lottery S
 The model estimates 90-minute home/draw/away probabilities, while China Sports Lottery SP values
 are manually entered and used only for review and expected value analysis, not as model inputs.
 
+## 中国体彩 SP 复盘
+
+页面采用浅色双列卡片布局，分为“未来预测”和“历史复盘”两个区域：
+
+- `actual` 留空的比赛会进入“未来预测 / 待开奖”。
+- `actual = H/D/A` 的比赛会进入“历史复盘”，分别表示主胜、平局、客胜。
+- 每张卡片优先展示主胜下注、平局下注、客胜下注的模拟金额和中国体彩 SP。
+- 模型概率、公允赔率和 edge 放在“查看模型细节”折叠区域里，默认不挤占主卡片。
+
+`data/china_sp_review.csv` 里已经放了多行示例 SP 和赛果，只是 demo 占位，不是官方中国体彩数据，
+也不代表真实赛果或真实 SP。用户需要从合法渠道查看中国体彩竞彩足球胜平负 SP，然后手动替换 CSV。
+
+运行：
+
+```bash
+wcforecast china-sp-review
+```
+
+打开本地页面：
+
+```bash
+docs/china-sp-review.html
+```
+
+GitHub Pages：
+
+[https://greenhand011.github.io/worldcup-forecast-china-sp/](https://greenhand011.github.io/worldcup-forecast-china-sp/)
+
 ## 功能 / Features
 
 - 读取手动录入的中国体彩胜平负 SP CSV。
@@ -51,9 +79,10 @@ open docs/china-sp-review.html
 
 ## CSV 数据格式 / CSV Format
 
-编辑 `data/china_sp_review.csv`，每行一场比赛：
+编辑 `data/china_sp_review.csv`，每行一场比赛。以 `#` 开头的行是注释，会被程序忽略：
 
 ```csv
+# 示例数据：以下 SP 和赛果仅用于 demo 占位，不是官方中国体彩数据。
 date,home,away,neutral,sp_home,sp_draw,sp_away,actual
 2026-07-05,Brazil,Norway,true,1.83,3.77,4.88,
 ```

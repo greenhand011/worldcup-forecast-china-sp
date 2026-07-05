@@ -56,6 +56,13 @@ def test_unsettled_blank_actual_is_pending():
     assert reviewed["pnl"] is None
 
 
+def test_actual_non_blank_is_settled_history():
+    reviewed = review_for("D")
+    assert reviewed["status"] == "settled"
+    assert reviewed["actual_outcome"] == "draw"
+    assert reviewed["actual_label"] == "平局"
+
+
 def test_edge_is_probability_times_sp_minus_one():
     reviewed = china_sp.review_match(
         {**sample_row(None), "sp_home": 2.4},
@@ -65,9 +72,10 @@ def test_edge_is_probability_times_sp_minus_one():
     assert reviewed["edge"]["home"] == pytest.approx(0.5 * 2.4 - 1.0)
 
 
-def test_read_china_sp_csv_basic(tmp_path):
+def test_read_china_sp_csv_basic_with_comments(tmp_path):
     path = tmp_path / "china_sp_review.csv"
     path.write_text(
+        "# demo only, not official SP\n"
         "date,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
         "2026-07-05,Brazil,Norway,true,1.83,3.77,4.88,\n",
         encoding="utf-8",
@@ -85,3 +93,34 @@ def test_read_china_sp_csv_basic(tmp_path):
             "actual": None,
         }
     ]
+
+
+def test_build_review_splits_pending_and_settled(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-05,Brazil,Norway,true,2.00,4.00,5.00,\n"
+        "2026-07-06,Brazil,Norway,true,2.00,4.00,5.00,H\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity)
+    assert review["summary"]["pending_count"] == 1
+    assert review["summary"]["settled_count"] == 1
+    assert [m["status"] for m in review["matches"]] == ["pending", "settled"]
+
+
+def test_render_html_contains_redesigned_sections():
+    review = {
+        "summary": {
+            "cumulative_pnl": 2000.0,
+            "settled_count": 1,
+            "pending_count": 1,
+            "match_count": 2,
+            "profitable_count": 1,
+            "hit_rate": 1.0,
+        },
+        "matches": [review_for(None), review_for("D")],
+    }
+    html = china_sp.render_html(review)
+    for text in ["未来预测", "历史复盘", "主胜下注", "平局下注", "客胜下注", "查看模型细节"]:
+        assert text in html

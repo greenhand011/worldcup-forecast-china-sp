@@ -1,8 +1,8 @@
 """Manual China Sports Lottery SP review helpers.
 
-This module treats China Sports Lottery SP values as user-entered review data only.
-The SP values are never used as model inputs; they are applied after the model's
-market-independent 1X2 probabilities have been calibrated.
+China Sports Lottery SP values are user-entered review data only. They are
+applied after the project's market-independent calibrated model probabilities
+and are never used as model inputs.
 """
 from __future__ import annotations
 
@@ -20,27 +20,39 @@ from .teams import INDEX
 CSV_FIELDS = ("date", "home", "away", "neutral", "sp_home", "sp_draw", "sp_away", "actual")
 OUTCOMES = ("home", "draw", "away")
 OUTCOME_LABELS = {"home": "主胜", "draw": "平局", "away": "客胜"}
+BET_LABELS = {"home": "主胜下注", "draw": "平局下注", "away": "客胜下注"}
+OUTCOME_MARKERS = {"home": "主", "draw": "平", "away": "客"}
 ACTUAL_TO_OUTCOME = {"H": "home", "D": "draw", "A": "away"}
 ACTUAL_LABELS = {"H": "主胜", "D": "平局", "A": "客胜", None: "待开奖"}
+REPO_URL = "https://github.com/greenhand011/worldcup-forecast-china-sp"
 
 
 def read_china_sp_csv(path: str | Path) -> list[dict]:
-    """Read the manual China Sports Lottery SP CSV into typed match rows."""
+    """Read the manual China Sports Lottery SP CSV into typed match rows.
+
+    Lines starting with ``#`` are ignored so the committed demo file can explain
+    that its SP values are placeholders, not official China Sports Lottery data.
+    """
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"China SP review CSV not found: {path}")
 
     with path.open("r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
-        missing = [field for field in CSV_FIELDS if field not in (reader.fieldnames or [])]
-        if missing:
-            raise ValueError(f"China SP CSV is missing required field(s): {', '.join(missing)}")
+        lines = [line for line in f if line.strip() and not line.lstrip().startswith("#")]
 
-        rows = []
-        for line_no, raw in enumerate(reader, start=2):
-            if not any((value or "").strip() for value in raw.values()):
-                continue
-            rows.append(_parse_row(raw, line_no))
+    if not lines:
+        raise ValueError(f"China SP CSV is empty after comments are ignored: {path}")
+
+    reader = csv.DictReader(lines)
+    missing = [field for field in CSV_FIELDS if field not in (reader.fieldnames or [])]
+    if missing:
+        raise ValueError(f"China SP CSV is missing required field(s): {', '.join(missing)}")
+
+    rows = []
+    for line_no, raw in enumerate(reader, start=2):
+        if not any((value or "").strip() for value in raw.values()):
+            continue
+        rows.append(_parse_row(raw, line_no))
     return rows
 
 
@@ -51,8 +63,8 @@ def allocate_bankroll(
 ) -> dict[str, int]:
     """Allocate ``bankroll`` across H/D/A by probability, rounded to ``unit``.
 
-    The rounded allocations are forced to sum exactly to ``bankroll`` by adding the
-    residual to the largest-probability outcome.
+    The rounded allocations are forced to sum exactly to ``bankroll`` by adding
+    the residual to the largest-probability outcome.
     """
     bankroll = int(bankroll)
     unit = int(unit)
@@ -148,6 +160,8 @@ def build_review(
     settled = [m for m in matches if m["status"] == "settled"]
     pending = [m for m in matches if m["status"] == "pending"]
     cumulative_pnl = sum(float(m["pnl"]) for m in settled)
+    profitable = [m for m in settled if float(m["pnl"]) > 0]
+    hit_rate = (len(profitable) / len(settled)) if settled else None
     return {
         "input": str(input_path),
         "bankroll": int(bankroll),
@@ -158,6 +172,8 @@ def build_review(
             "settled_count": len(settled),
             "pending_count": len(pending),
             "match_count": len(matches),
+            "profitable_count": len(profitable),
+            "hit_rate": hit_rate,
         },
     }
 
@@ -183,7 +199,7 @@ def format_console_table(review: Mapping[str, object]) -> str:
             _fmt_odds_triplet(match["fair_odds"]),
             _fmt_alloc_triplet(match["allocation"]),
             match["actual_label"],
-            "待开奖" if match["pnl"] is None else _fmt_money(match["pnl"]),
+            "待开奖" if match["pnl"] is None else _fmt_console_currency(match["pnl"]),
             _edge_hint(match["edge"]),
         ])
 
@@ -197,7 +213,7 @@ def format_console_table(review: Mapping[str, object]) -> str:
     summary = review["summary"]
     footer = (
         f"合计：已结算 {summary['settled_count']} 场，待开奖 {summary['pending_count']} 场，"
-        f"累计盈亏 {_fmt_money(summary['cumulative_pnl'])}"
+        f"累计收益 {_fmt_console_currency(summary['cumulative_pnl'])}"
     )
     return "\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer])
 
@@ -208,247 +224,360 @@ def render_html(review: Mapping[str, object]) -> str:
     pending = [m for m in matches if m["status"] == "pending"]
     settled = [m for m in matches if m["status"] == "settled"]
     summary = review["summary"]
+    hit_rate = summary.get("hit_rate")
+    hit_rate_card = "" if hit_rate is None else f"""
+      <div class="summary-item">
+        <span>盈利场次率</span>
+        <strong>{_fmt_pct(float(hit_rate))}</strong>
+      </div>"""
+
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>中国体彩 SP 世界杯复盘</title>
+  <title>中国体彩 SP 世界杯预测</title>
   <style>
     :root {{
-      color-scheme: dark;
-      --bg: #101318;
-      --panel: #191f27;
-      --panel-2: #202833;
-      --text: #eef3f7;
-      --muted: #9caab8;
-      --line: #303a46;
-      --green: #48d17d;
-      --red: #ff6b6b;
-      --gold: #f2c14e;
-      --cyan: #5bc0eb;
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #d9e0e8;
+      --soft-line: #edf1f5;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --green: #159957;
+      --green-soft: #eaf8f0;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --amber: #b45309;
+      --shadow: 0 10px 30px rgba(31, 41, 55, 0.08);
     }}
     * {{ box-sizing: border-box; }}
     body {{
       margin: 0;
       min-height: 100vh;
-      background:
-        linear-gradient(135deg, rgba(91, 192, 235, .12), transparent 32rem),
-        radial-gradient(circle at 88% 8%, rgba(242, 193, 78, .12), transparent 18rem),
-        var(--bg);
+      background: var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
       letter-spacing: 0;
     }}
     main {{
-      width: min(1180px, calc(100% - 32px));
+      width: min(980px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 36px 0 48px;
+      padding: 22px 0 44px;
     }}
-    .hero {{
+    .topbar {{
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 24px;
-      align-items: end;
-      padding: 22px 0 28px;
-      border-bottom: 1px solid var(--line);
-    }}
-    .eyebrow {{
-      color: var(--gold);
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 0 16px;
     }}
     h1 {{
-      margin: 8px 0 10px;
-      font-size: clamp(30px, 4vw, 52px);
-      line-height: 1.05;
+      margin: 0 0 6px;
+      font-size: clamp(24px, 3.4vw, 34px);
+      line-height: 1.16;
       letter-spacing: 0;
     }}
-    .subtle {{
+    .subtitle {{
       margin: 0;
       color: var(--muted);
-      line-height: 1.7;
-      max-width: 760px;
+      font-size: 14px;
+      line-height: 1.6;
+    }}
+    .github-link {{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      background: var(--card);
+      text-decoration: none;
+      font-weight: 700;
+      box-shadow: 0 2px 10px rgba(31, 41, 55, 0.05);
+      white-space: nowrap;
     }}
     .summary {{
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin: 24px 0 30px;
+      grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 8px 0 24px;
     }}
     .summary-item {{
-      padding: 16px 18px;
-      background: var(--panel);
+      min-height: 76px;
+      padding: 13px 15px;
       border: 1px solid var(--line);
       border-radius: 8px;
+      background: var(--card);
+      box-shadow: var(--shadow);
     }}
     .summary-item span {{
       display: block;
       color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 6px;
+      font-size: 12px;
+      margin-bottom: 7px;
     }}
     .summary-item strong {{
-      font-size: 30px;
-      line-height: 1.15;
+      display: block;
+      font-size: 24px;
+      line-height: 1.1;
     }}
-    h2.section-title {{
-      margin: 34px 0 14px;
-      font-size: 22px;
+    .summary-item.profit strong {{
+      color: var(--green);
+      font-size: 30px;
+    }}
+    .summary-item.profit.negative strong {{ color: var(--red); }}
+    .section-heading {{
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 24px 0 12px;
+    }}
+    .section-heading h2 {{
+      margin: 0;
+      font-size: 20px;
       letter-spacing: 0;
     }}
-    .grid {{
+    .section-heading span {{
+      color: var(--muted);
+      font-size: 13px;
+    }}
+    .card-grid {{
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
     }}
     .match-card {{
-      background: linear-gradient(180deg, var(--panel), var(--panel-2));
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 18px;
-      box-shadow: 0 18px 50px rgba(0, 0, 0, .22);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      padding: 14px;
     }}
     .match-head {{
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 14px;
+      gap: 10px;
       align-items: start;
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 14px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }}
     .date {{
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
       margin-bottom: 5px;
     }}
     .match-title {{
       margin: 0;
-      font-size: 22px;
-      line-height: 1.2;
+      font-size: 18px;
+      line-height: 1.25;
       overflow-wrap: anywhere;
     }}
     .match-title span {{
       color: var(--muted);
-      font-weight: 500;
-      font-size: 15px;
-      margin: 0 5px;
-    }}
-    .badge {{
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 6px 10px;
-      color: var(--cyan);
-      white-space: nowrap;
       font-size: 13px;
-      background: rgba(91, 192, 235, .08);
+      font-weight: 500;
+      margin: 0 6px;
     }}
-    .badge.settled {{
-      color: var(--gold);
-      background: rgba(242, 193, 78, .08);
-    }}
-    .rows {{
-      display: grid;
-      gap: 10px;
-    }}
-    .metric {{
-      display: grid;
-      grid-template-columns: 84px repeat(3, minmax(0, 1fr));
-      gap: 8px;
+    .status {{
+      display: inline-flex;
       align-items: center;
-      font-size: 14px;
+      min-height: 28px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
     }}
-    .metric .label {{
+    .status.pending {{
+      color: var(--blue);
+      background: var(--blue-soft);
+      border: 1px solid #c7ddff;
+    }}
+    .status.positive {{
+      color: var(--green);
+      background: var(--green-soft);
+      border: 1px solid #bfe8ce;
+    }}
+    .status.negative {{
+      color: var(--red);
+      background: var(--red-soft);
+      border: 1px solid #fecaca;
+    }}
+    .bet-grid {{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }}
+    .bet-column {{
+      min-width: 0;
+      padding: 10px 9px;
+      border: 1px solid var(--soft-line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }}
+    .bet-column.hit {{
+      background: var(--green-soft);
+      border-color: #bfe8ce;
+    }}
+    .bet-label {{
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }}
+    .marker {{
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 22px;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: var(--blue);
+      font-size: 12px;
+      font-weight: 900;
+    }}
+    .amount {{
+      font-size: 18px;
+      line-height: 1.1;
+      font-weight: 850;
+      white-space: nowrap;
+    }}
+    .sp {{
+      margin-top: 5px;
       color: var(--muted);
       font-size: 13px;
+      font-weight: 700;
     }}
-    .pill {{
-      min-width: 0;
-      padding: 8px 9px;
+    .model-details {{
+      margin-top: 12px;
+      border-top: 1px solid var(--soft-line);
+      padding-top: 10px;
+    }}
+    .model-details summary {{
+      cursor: pointer;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 800;
+      list-style-position: inside;
+    }}
+    .detail-grid {{
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }}
+    .detail-row {{
+      display: grid;
+      grid-template-columns: 78px repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      align-items: center;
+      font-size: 12px;
+    }}
+    .detail-label {{
+      color: var(--muted);
+      font-weight: 700;
+    }}
+    .detail-value {{
+      padding: 6px;
       border-radius: 6px;
-      background: rgba(255, 255, 255, .045);
-      border: 1px solid rgba(255, 255, 255, .06);
+      background: #f8fafc;
       text-align: right;
       white-space: nowrap;
     }}
-    .pill b {{
+    .detail-value b {{
       display: block;
       color: var(--muted);
-      font-size: 11px;
-      font-weight: 600;
-      margin-bottom: 2px;
+      font-size: 10px;
+      font-weight: 700;
       text-align: left;
+      margin-bottom: 2px;
     }}
-    .pos {{ color: var(--green); }}
-    .neg {{ color: var(--red); }}
-    .result {{
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--line);
-    }}
-    .result div {{
-      color: var(--muted);
-      font-size: 13px;
-    }}
-    .result strong {{
-      display: block;
-      color: var(--text);
-      font-size: 20px;
-      margin-top: 3px;
-    }}
+    .positive {{ color: var(--green); }}
+    .negative {{ color: var(--red); }}
     .empty {{
-      color: var(--muted);
+      padding: 20px;
       border: 1px dashed var(--line);
       border-radius: 8px;
-      padding: 22px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.65);
     }}
     .disclaimer {{
-      margin-top: 36px;
-      padding: 18px 0 0;
+      margin-top: 28px;
+      padding-top: 16px;
       border-top: 1px solid var(--line);
       color: var(--muted);
+      font-size: 13px;
       line-height: 1.7;
-      font-size: 14px;
     }}
-    @media (max-width: 720px) {{
-      main {{ width: min(100% - 20px, 1180px); padding-top: 22px; }}
-      .hero {{ grid-template-columns: 1fr; }}
+    @media (max-width: 760px) {{
+      main {{ width: min(100% - 20px, 980px); }}
+      .topbar {{ grid-template-columns: 1fr; }}
+      .github-link {{ justify-self: start; }}
+      .summary {{ grid-template-columns: 1fr 1fr; }}
+      .summary-item.profit {{ grid-column: 1 / -1; }}
+      .card-grid {{ grid-template-columns: 1fr; }}
+    }}
+    @media (max-width: 460px) {{
       .summary {{ grid-template-columns: 1fr; }}
-      .metric {{ grid-template-columns: 1fr; }}
-      .pill {{ text-align: left; }}
-      .result {{ grid-template-columns: 1fr; }}
+      .bet-grid {{ grid-template-columns: 1fr; }}
+      .detail-row {{ grid-template-columns: 1fr; }}
+      .detail-value {{ text-align: left; }}
     }}
   </style>
 </head>
 <body>
   <main>
-    <section class="hero">
+    <header class="topbar">
       <div>
-        <div class="eyebrow">Manual SP Review</div>
-        <h1>中国体彩 SP 世界杯复盘</h1>
-        <p class="subtle">基于项目原有模型的校准胜平负概率，叠加用户手动录入的中国体彩竞彩足球胜平负 SP，用统一模拟本金复盘分配和结算。</p>
+        <h1>中国体彩 SP 世界杯预测</h1>
+        <p class="subtitle">基于模型概率 + 用户手动录入中国体彩胜平负 SP 的复盘页面</p>
       </div>
-    </section>
+      <a class="github-link" href="{REPO_URL}">GitHub</a>
+    </header>
 
     <section class="summary" aria-label="复盘汇总">
-      <div class="summary-item"><span>累计盈亏</span><strong class="{_sign_class(summary['cumulative_pnl'])}">{_fmt_money(summary['cumulative_pnl'])}</strong></div>
-      <div class="summary-item"><span>已结算场次</span><strong>{summary['settled_count']}</strong></div>
-      <div class="summary-item"><span>待开奖场次</span><strong>{summary['pending_count']}</strong></div>
+      <div class="summary-item profit {_negative_class(summary['cumulative_pnl'])}">
+        <span>累计收益</span>
+        <strong>{_fmt_signed_currency(summary['cumulative_pnl'])}</strong>
+      </div>
+      <div class="summary-item">
+        <span>已结算场次</span>
+        <strong>{summary['settled_count']}</strong>
+      </div>
+      <div class="summary-item">
+        <span>待开奖场次</span>
+        <strong>{summary['pending_count']}</strong>
+      </div>{hit_rate_card}
     </section>
 
-    <h2 class="section-title">未来预测 / 待开奖</h2>
-    {_render_card_grid(pending, empty_text="暂无待开奖比赛。")}
+    <section>
+      <div class="section-heading">
+        <h2>未来预测 {len(pending)}</h2>
+        <span>actual 留空的比赛</span>
+      </div>
+      {_render_card_grid(pending, empty_text="暂无待开奖比赛。")}
+    </section>
 
-    <h2 class="section-title">历史复盘</h2>
-    {_render_card_grid(settled, empty_text="暂无已结算比赛。")}
+    <section>
+      <div class="section-heading">
+        <h2>历史复盘 {len(settled)}</h2>
+        <span>actual = H / D / A 的比赛</span>
+      </div>
+      {_render_card_grid(settled, empty_text="暂无已结算比赛。")}
+    </section>
 
     <footer class="disclaimer">
-      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。模型概率不是保证，历史盈亏不能证明长期存在 edge。
+      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。示例 SP 和赛果只是 demo 占位，不代表官方中国体彩数据。模型概率不是保证，历史盈亏不能证明长期存在 edge。
     </footer>
   </main>
 </body>
@@ -460,7 +589,8 @@ def write_html(review: Mapping[str, object], output_path: str | Path) -> Path:
     """Write the static HTML review page and return its path."""
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(render_html(review), encoding="utf-8")
+    html_text = "\n".join(line.rstrip() for line in render_html(review).splitlines()) + "\n"
+    output_path.write_text(html_text, encoding="utf-8")
     return output_path
 
 
@@ -532,13 +662,24 @@ def _fmt_edge(value: float) -> str:
     return f"{sign}{value * 100:.1f}%"
 
 
-def _fmt_money(value: float) -> str:
+def _fmt_currency(value: float) -> str:
+    return f"¥{int(round(value)):,.0f}"
+
+
+def _fmt_signed_currency(value: float) -> str:
+    value = 0.0 if abs(float(value)) < 0.05 else float(value)
     sign = "+" if value >= 0 else "-"
-    return f"{sign}{abs(value):,.0f} 元"
+    return f"{sign}¥{abs(value):,.1f}"
 
 
-def _fmt_yuan(value: float) -> str:
-    return f"{int(value):,} 元"
+def _fmt_console_currency(value: float) -> str:
+    value = 0.0 if abs(float(value)) < 0.05 else float(value)
+    sign = "+" if value >= 0 else "-"
+    return f"{sign}{abs(value):,.1f} 元"
+
+
+def _fmt_sp(value: float) -> str:
+    return f"@{value:.2f}"
 
 
 def _fmt_odds(value: float) -> str:
@@ -565,8 +706,8 @@ def _edge_hint(edge: Mapping[str, float]) -> str:
     best = max(OUTCOMES, key=lambda outcome: edge[outcome])
     label = OUTCOME_LABELS[best]
     if edge[best] > 0:
-        return f"正edge：{label} {_fmt_edge(edge[best])}"
-    return f"无正edge，最佳 {label} {_fmt_edge(edge[best])}"
+        return f"正 edge：{label} {_fmt_edge(edge[best])}"
+    return f"无正 edge，最佳 {label} {_fmt_edge(edge[best])}"
 
 
 def _display_width(value: str) -> int:
@@ -582,10 +723,14 @@ def _pad(value: str, width: int) -> str:
     return value + " " * (width - _display_width(value))
 
 
-def _sign_class(value: float | None) -> str:
+def _negative_class(value: float | None) -> str:
+    return "negative" if value is not None and float(value) < 0 else ""
+
+
+def _value_class(value: float | None) -> str:
     if value is None:
         return ""
-    return "pos" if value >= 0 else "neg"
+    return "positive" if float(value) >= 0 else "negative"
 
 
 def _html_escape(value: object) -> str:
@@ -597,50 +742,71 @@ def _render_card_grid(matches: Iterable[Mapping[str, object]], empty_text: str) 
     if not matches:
         return f'<div class="empty">{_html_escape(empty_text)}</div>'
     cards = "\n".join(_render_card(match) for match in matches)
-    return f'<section class="grid">{cards}</section>'
+    return f'<div class="card-grid">{cards}</div>'
 
 
 def _render_card(match: Mapping[str, object]) -> str:
-    status_class = "settled" if match["status"] == "settled" else ""
-    pnl = match["pnl"]
-    pnl_text = "待开奖" if pnl is None else _fmt_money(float(pnl))
-    result_class = "" if pnl is None else _sign_class(float(pnl))
-    venue = "中立场" if match["neutral"] else "主场"
+    if match["status"] == "pending":
+        status = '<span class="status pending">待开奖</span>'
+    else:
+        pnl = float(match["pnl"])
+        status = (
+            f'<span class="status {_value_class(pnl)}">'
+            f'实际 {match["actual_label"]} {_fmt_signed_currency(pnl)}</span>'
+        )
+
     return f"""
-      <article class="match-card">
-        <header class="match-head">
-          <div>
-            <div class="date">{_html_escape(match['date'])} · {venue}</div>
-            <h3 class="match-title">{_html_escape(match['home'])}<span>vs</span>{_html_escape(match['away'])}</h3>
+        <article class="match-card">
+          <header class="match-head">
+            <div>
+              <div class="date">{_html_escape(match['date'])}</div>
+              <h3 class="match-title">{_html_escape(match['home'])}<span>vs</span>{_html_escape(match['away'])}</h3>
+            </div>
+            {status}
+          </header>
+          <div class="bet-grid">
+            {_render_bet_column(match, "home")}
+            {_render_bet_column(match, "draw")}
+            {_render_bet_column(match, "away")}
           </div>
-          <div class="badge {status_class}">{_html_escape(match['actual_label'])}</div>
-        </header>
-        <div class="rows">
-          {_render_metric("模型概率", match["probabilities"], _fmt_pct)}
-          {_render_metric("体彩SP", match["sp"], _fmt_odds)}
-          {_render_metric("公允赔率", match["fair_odds"], _fmt_odds)}
-          {_render_metric("模拟分配", match["allocation"], _fmt_yuan)}
-          {_render_metric("单项edge", match["edge"], _fmt_edge, value_class=True)}
-        </div>
-        <div class="result">
-          <div>实际结果<strong>{_html_escape(match['actual_label'])}</strong></div>
-          <div>盈亏<strong class="{result_class}">{pnl_text}</strong></div>
-        </div>
-      </article>
+          {_render_model_details(match)}
+        </article>
 """
 
 
-def _render_metric(
+def _render_bet_column(match: Mapping[str, object], outcome: str) -> str:
+    hit = " hit" if match["actual_outcome"] == outcome else ""
+    return f"""
+            <div class="bet-column{hit}">
+              <div class="bet-label"><span class="marker">{OUTCOME_MARKERS[outcome]}</span>{BET_LABELS[outcome]}</div>
+              <div class="amount">{_fmt_currency(match["allocation"][outcome])}</div>
+              <div class="sp">{_fmt_sp(match["sp"][outcome])}</div>
+            </div>"""
+
+
+def _render_model_details(match: Mapping[str, object]) -> str:
+    return f"""
+          <details class="model-details">
+            <summary>查看模型细节</summary>
+            <div class="detail-grid">
+              {_render_detail_row("模型概率", match["probabilities"], _fmt_pct)}
+              {_render_detail_row("公允赔率", match["fair_odds"], _fmt_odds)}
+              {_render_detail_row("Edge", match["edge"], _fmt_edge, signed=True)}
+            </div>
+          </details>"""
+
+
+def _render_detail_row(
     label: str,
     values: Mapping[str, float],
     formatter: Callable[[float], str],
-    value_class: bool = False,
+    signed: bool = False,
 ) -> str:
     cells = []
     for outcome in OUTCOMES:
         value = float(values[outcome])
-        cls = _sign_class(value) if value_class else ""
+        cls = f" {_value_class(value)}" if signed else ""
         cells.append(
-            f'<div class="pill {cls}"><b>{OUTCOME_LABELS[outcome]}</b>{formatter(value)}</div>'
+            f'<div class="detail-value{cls}"><b>{OUTCOME_LABELS[outcome]}</b>{formatter(value)}</div>'
         )
-    return f'<div class="metric"><div class="label">{label}</div>{"".join(cells)}</div>'
+    return f'<div class="detail-row"><div class="detail-label">{label}</div>{"".join(cells)}</div>'
