@@ -122,7 +122,7 @@ def main(argv=None):
     c = sub.add_parser("china-sp-review", help="中国体彩胜平负 SP 复盘网页")
     c.add_argument("--input", default="data/china_sp_review.csv")
     c.add_argument("--output", default="docs/china-sp-review.html")
-    c.add_argument("--bankroll", type=int, default=10000)
+    c.add_argument("--bankroll", type=int, default=100)
     c.add_argument("--unit", type=int, default=100)
     c.set_defaults(func=cmd_china_sp_review)
 

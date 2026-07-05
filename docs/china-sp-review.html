@@ -189,6 +189,10 @@
       border-radius: 8px;
       background: #fbfcfe;
     }
+    .bet-column.selected {
+      background: var(--blue-soft);
+      border-color: #bfdbfe;
+    }
     .bet-column.hit {
       background: var(--green-soft);
       border-color: #bfe8ce;
@@ -225,6 +229,20 @@
       color: var(--muted);
       font-size: 13px;
       font-weight: 700;
+    }
+    .stage {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 7px;
+      margin-left: 6px;
+      border-radius: 999px;
+      color: var(--amber);
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      font-size: 11px;
+      font-weight: 800;
+      vertical-align: middle;
     }
     .model-details {
       margin-top: 12px;
@@ -307,7 +325,7 @@
     <header class="topbar">
       <div>
         <h1>中国体彩 SP 世界杯预测</h1>
-        <p class="subtitle">基于模型概率 + 用户手动录入中国体彩胜平负 SP 的复盘页面</p>
+        <p class="subtitle">基于模型概率 + 用户手动录入中国体彩胜平负 SP 的复盘页面；每场总模拟 100 元，不构成投注建议</p>
       </div>
       <a class="github-link" href="https://github.com/greenhand011/worldcup-forecast-china-sp">GitHub</a>
     </header>
@@ -315,7 +333,7 @@
     <section class="summary" aria-label="复盘汇总">
       <div class="summary-item profit negative">
         <span>累计收益</span>
-        <strong>-¥5,965.0</strong>
+        <strong>-¥606.0</strong>
       </div>
       <div class="summary-item">
         <span>已结算场次</span>
@@ -327,7 +345,7 @@
       </div>
       <div class="summary-item">
         <span>盈利场次率</span>
-        <strong>25.0%</strong>
+        <strong>12.5%</strong>
       </div>
     </section>
 
@@ -340,7 +358,7 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-07-05</div>
+              <div class="date">2026-07-05<span class="stage">淘汰赛</span></div>
               <h3 class="match-title">Brazil<span>vs</span>Norway</h3>
             </div>
             <span class="status pending">待开奖</span>
@@ -349,19 +367,19 @@
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥4,900</div>
+              <div class="amount">¥0</div>
               <div class="sp">@1.83</div>
             </div>
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥2,900</div>
+              <div class="amount">¥100</div>
               <div class="sp">@3.77</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥2,200</div>
+              <div class="amount">¥0</div>
               <div class="sp">@4.88</div>
             </div>
           </div>
@@ -380,28 +398,28 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-07-06</div>
+              <div class="date">2026-07-06<span class="stage">淘汰赛</span></div>
               <h3 class="match-title">Mexico<span>vs</span>England</h3>
             </div>
             <span class="status pending">待开奖</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥2,300</div>
+              <div class="amount">¥100</div>
               <div class="sp">@5.60</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥2,900</div>
+              <div class="amount">¥0</div>
               <div class="sp">@3.95</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥4,800</div>
+              <div class="amount">¥0</div>
               <div class="sp">@1.66</div>
             </div>
           </div>
@@ -427,28 +445,28 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-06-20</div>
+              <div class="date">2026-06-20<span class="stage">小组赛</span></div>
               <h3 class="match-title">Paraguay<span>vs</span>France</h3>
             </div>
-            <span class="status negative">实际 客胜 -¥285.0</span>
+            <span class="status negative">实际 客胜 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥1,100</div>
+              <div class="amount">¥0</div>
               <div class="sp">@7.80</div>
             </div>
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥2,200</div>
+              <div class="amount">¥100</div>
               <div class="sp">@4.45</div>
             </div>
 
             <div class="bet-column hit">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥6,700</div>
+              <div class="amount">¥0</div>
               <div class="sp">@1.45</div>
             </div>
           </div>
@@ -467,28 +485,28 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-06-21</div>
+              <div class="date">2026-06-21<span class="stage">小组赛</span></div>
               <h3 class="match-title">Canada<span>vs</span>Morocco</h3>
             </div>
-            <span class="status negative">实际 平局 -¥142.0</span>
+            <span class="status negative">实际 平局 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥2,800</div>
+              <div class="amount">¥0</div>
               <div class="sp">@2.72</div>
             </div>
 
             <div class="bet-column hit">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥3,100</div>
+              <div class="amount">¥0</div>
               <div class="sp">@3.18</div>
             </div>
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥4,100</div>
+              <div class="amount">¥100</div>
               <div class="sp">@2.63</div>
             </div>
           </div>
@@ -507,28 +525,28 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-06-22</div>
+              <div class="date">2026-06-22<span class="stage">小组赛</span></div>
               <h3 class="match-title">Colombia<span>vs</span>Ghana</h3>
             </div>
-            <span class="status positive">实际 主胜 +¥282.0</span>
+            <span class="status positive">实际 主胜 +¥94.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥5,300</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.94</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥2,900</div>
+              <div class="amount">¥0</div>
               <div class="sp">@3.36</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥1,800</div>
+              <div class="amount">¥0</div>
               <div class="sp">@4.05</div>
             </div>
           </div>
@@ -547,28 +565,28 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-06-23</div>
+              <div class="date">2026-06-23<span class="stage">小组赛</span></div>
               <h3 class="match-title">Argentina<span>vs</span>Cape Verde</h3>
             </div>
-            <span class="status negative">实际 主胜 -¥850.0</span>
+            <span class="status negative">实际 主胜 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
             <div class="bet-column hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥7,500</div>
+              <div class="amount">¥0</div>
               <div class="sp">@1.22</div>
             </div>
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥1,800</div>
+              <div class="amount">¥100</div>
               <div class="sp">@5.80</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥700</div>
+              <div class="amount">¥0</div>
               <div class="sp">@10.50</div>
             </div>
           </div>
@@ -587,28 +605,28 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-06-24</div>
+              <div class="date">2026-06-24<span class="stage">小组赛</span></div>
               <h3 class="match-title">Australia<span>vs</span>Egypt</h3>
             </div>
-            <span class="status negative">实际 客胜 -¥976.0</span>
+            <span class="status negative">实际 客胜 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥3,500</div>
+              <div class="amount">¥0</div>
               <div class="sp">@2.58</div>
             </div>
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥3,300</div>
+              <div class="amount">¥100</div>
               <div class="sp">@3.20</div>
             </div>
 
             <div class="bet-column hit">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥3,200</div>
+              <div class="amount">¥0</div>
               <div class="sp">@2.82</div>
             </div>
           </div>
@@ -627,28 +645,28 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-06-25</div>
+              <div class="date">2026-06-25<span class="stage">小组赛</span></div>
               <h3 class="match-title">Switzerland<span>vs</span>Algeria</h3>
             </div>
-            <span class="status positive">实际 平局 +¥168.0</span>
+            <span class="status negative">实际 平局 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥4,100</div>
+              <div class="amount">¥0</div>
               <div class="sp">@2.06</div>
             </div>
 
             <div class="bet-column hit">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥3,100</div>
+              <div class="amount">¥0</div>
               <div class="sp">@3.28</div>
             </div>
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥2,800</div>
+              <div class="amount">¥100</div>
               <div class="sp">@3.72</div>
             </div>
           </div>
@@ -667,28 +685,28 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-06-26</div>
+              <div class="date">2026-06-26<span class="stage">淘汰赛</span></div>
               <h3 class="match-title">Portugal<span>vs</span>Croatia</h3>
             </div>
-            <span class="status negative">实际 主胜 -¥2,002.0</span>
+            <span class="status negative">实际 主胜 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
             <div class="bet-column hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥4,300</div>
+              <div class="amount">¥0</div>
               <div class="sp">@1.86</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥3,000</div>
+              <div class="amount">¥0</div>
               <div class="sp">@3.44</div>
             </div>
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥2,700</div>
+              <div class="amount">¥100</div>
               <div class="sp">@4.40</div>
             </div>
           </div>
@@ -707,28 +725,28 @@
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">2026-06-27</div>
+              <div class="date">2026-06-27<span class="stage">淘汰赛</span></div>
               <h3 class="match-title">Spain<span>vs</span>Austria</h3>
             </div>
-            <span class="status negative">实际 客胜 -¥2,160.0</span>
+            <span class="status negative">实际 客胜 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
-              <div class="amount">¥5,800</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.72</div>
             </div>
 
             <div class="bet-column">
               <div class="bet-label"><span class="marker">平</span>平局下注</div>
-              <div class="amount">¥2,600</div>
+              <div class="amount">¥0</div>
               <div class="sp">@3.62</div>
             </div>
 
             <div class="bet-column hit">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
-              <div class="amount">¥1,600</div>
+              <div class="amount">¥0</div>
               <div class="sp">@4.90</div>
             </div>
           </div>
@@ -746,7 +764,7 @@
     </section>
 
     <footer class="disclaimer">
-      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。示例 SP 和赛果只是 demo 占位，不代表官方中国体彩数据。模型概率不是保证，历史盈亏不能证明长期存在 edge。
+      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。示例 SP 和赛果只是 demo 占位，不代表官方中国体彩数据。每场总模拟金额为 100 元，投向当前模型概率下 edge 最大的一项；这不是自动下注或盈利保证。模型概率不是保证，历史盈亏不能证明长期存在 edge。
     </footer>
   </main>
 </body>

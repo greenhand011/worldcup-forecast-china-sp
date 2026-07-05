@@ -22,6 +22,10 @@ are manually entered and used only for review and expected value analysis, not a
 - `actual = H/D/A` 的比赛会进入“历史复盘”，分别表示主胜、平局、客胜。
 - 每张卡片优先展示主胜下注、平局下注、客胜下注的模拟金额和中国体彩 SP。
 - 模型概率、公允赔率和 edge 放在“查看模型细节”折叠区域里，默认不挤占主卡片。
+- 默认每场总模拟金额为 `100` 元，投向当前模型概率下 edge 最大的一项；这只是复盘模拟，
+  不是投注建议，也不是盈利保证。
+- CSV 可选 `stage` 列，用于区分小组赛、淘汰赛等赛段；`stage` 不参与模型训练，避免用少量
+  demo 数据反向调参造成过拟合。
 
 `data/china_sp_review.csv` 里已经放了多行示例 SP 和赛果，只是 demo 占位，不是官方中国体彩数据，
 也不代表真实赛果或真实 SP。用户需要从合法渠道查看中国体彩竞彩足球胜平负 SP，然后手动替换 CSV。
@@ -83,13 +87,14 @@ open docs/china-sp-review.html
 
 ```csv
 # 示例数据：以下 SP 和赛果仅用于 demo 占位，不是官方中国体彩数据。
-date,home,away,neutral,sp_home,sp_draw,sp_away,actual
-2026-07-05,Brazil,Norway,true,1.83,3.77,4.88,
+date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual
+2026-07-05,淘汰赛,Brazil,Norway,true,1.83,3.77,4.88,
 ```
 
 字段 / Fields:
 
 - `date`: 比赛日期 / match date.
+- `stage`: 赛段，例如 `小组赛`、`淘汰赛`，仅用于复盘展示 / match stage for review display only.
 - `home`: 主队英文名，需匹配项目球队名 / home team name recognized by the project.
 - `away`: 客队英文名，需匹配项目球队名 / away team name recognized by the project.
 - `neutral`: `true` 或 `false` / whether the match is played at a neutral venue.
@@ -113,12 +118,12 @@ edge = probability * SP - 1
 pnl = allocation_on_actual * sp_actual - bankroll
 ```
 
-默认每场模拟本金为 `10000` 元，最小分配单位为 `100` 元。金额按模型概率分配到主胜、平局、
-客胜三项，四舍五入后如有差额，加到概率最高的一项。
+默认每场总模拟金额为 `100` 元，最小单位为 `100` 元。复盘页会在模型概率计算完成后，
+用用户手动录入的 SP 计算三项 edge，并把这 `100` 元模拟放到 edge 最大的一项。
 
-By default, each match uses a simulated bankroll of `10000` yuan and a minimum allocation unit of
-`100` yuan. The bankroll is allocated across home/draw/away by model probability; any rounding
-residual is assigned to the most likely outcome.
+By default, each match uses a simulated total stake of `100` yuan and a minimum unit of `100` yuan.
+After model probabilities are computed, the manually entered SP values are used to calculate edge,
+and the `100` yuan review stake is assigned to the outcome with the largest edge.
 
 ## 免责声明 / Disclaimer
 

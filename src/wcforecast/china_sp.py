@@ -24,6 +24,7 @@ BET_LABELS = {"home": "主胜下注", "draw": "平局下注", "away": "客胜下
 OUTCOME_MARKERS = {"home": "主", "draw": "平", "away": "客"}
 ACTUAL_TO_OUTCOME = {"H": "home", "D": "draw", "A": "away"}
 ACTUAL_LABELS = {"H": "主胜", "D": "平局", "A": "客胜", None: "待开奖"}
+DEFAULT_STAGE = "未标注赛段"
 REPO_URL = "https://github.com/greenhand011/worldcup-forecast-china-sp"
 
 
@@ -85,10 +86,34 @@ def allocate_bankroll(
     return dict(zip(OUTCOMES, amounts))
 
 
+def allocate_best_edge(
+    edge: Mapping[str, float],
+    bankroll: int = 100,
+    unit: int = 100,
+) -> dict[str, int]:
+    """Put one flat review stake on the outcome with the largest model edge.
+
+    This is a review-only stake selection layer. SP values still do not enter the
+    model; they are used after prediction to choose which single 100-yuan outcome
+    would have the highest expected return for that manually entered SP snapshot.
+    """
+    bankroll = int(bankroll)
+    unit = int(unit)
+    if bankroll <= 0:
+        raise ValueError("bankroll must be positive")
+    if unit <= 0:
+        raise ValueError("unit must be positive")
+    if bankroll < unit or bankroll % unit != 0:
+        raise ValueError("bankroll must be a positive multiple of unit")
+
+    best = max(OUTCOMES, key=lambda outcome: float(edge[outcome]))
+    return {outcome: bankroll if outcome == best else 0 for outcome in OUTCOMES}
+
+
 def review_match(
     row: Mapping[str, object],
     model,
-    bankroll: int = 10000,
+    bankroll: int = 100,
     unit: int = 100,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
@@ -108,7 +133,9 @@ def review_match(
     sp = {"home": float(row["sp_home"]), "draw": float(row["sp_draw"]), "away": float(row["sp_away"])}
     fair_odds = {outcome: 1.0 / probabilities[outcome] for outcome in OUTCOMES}
     edge = {outcome: probabilities[outcome] * sp[outcome] - 1.0 for outcome in OUTCOMES}
-    allocation = allocate_bankroll(probabilities, bankroll=bankroll, unit=unit)
+    allocation = allocate_best_edge(edge, bankroll=bankroll, unit=unit)
+    selected_outcome = max(OUTCOMES, key=lambda outcome: allocation[outcome])
+    stake_total = sum(allocation.values())
 
     actual = row.get("actual")
     actual = None if actual in ("", None) else str(actual).strip().upper()
@@ -117,7 +144,7 @@ def review_match(
 
     if actual:
         actual_outcome = ACTUAL_TO_OUTCOME[actual]
-        pnl = allocation[actual_outcome] * sp[actual_outcome] - int(bankroll)
+        pnl = allocation[actual_outcome] * sp[actual_outcome] - stake_total
         status = "settled"
     else:
         actual_outcome = None
@@ -126,6 +153,7 @@ def review_match(
 
     return {
         "date": str(row["date"]).strip(),
+        "stage": str(row.get("stage") or DEFAULT_STAGE).strip() or DEFAULT_STAGE,
         "home": home,
         "away": away,
         "neutral": neutral,
@@ -134,6 +162,8 @@ def review_match(
         "fair_odds": fair_odds,
         "edge": edge,
         "allocation": allocation,
+        "selected_outcome": selected_outcome,
+        "stake_total": stake_total,
         "actual": actual,
         "actual_outcome": actual_outcome,
         "actual_label": ACTUAL_LABELS[actual],
@@ -147,7 +177,7 @@ def review_match(
 def build_review(
     input_path: str | Path,
     model,
-    bankroll: int = 10000,
+    bankroll: int = 100,
     unit: int = 100,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
@@ -174,6 +204,7 @@ def build_review(
             "match_count": len(matches),
             "profitable_count": len(profitable),
             "hit_rate": hit_rate,
+            "stage_count": _stage_count(matches),
         },
     }
 
@@ -422,6 +453,10 @@ def render_html(review: Mapping[str, object]) -> str:
       border-radius: 8px;
       background: #fbfcfe;
     }}
+    .bet-column.selected {{
+      background: var(--blue-soft);
+      border-color: #bfdbfe;
+    }}
     .bet-column.hit {{
       background: var(--green-soft);
       border-color: #bfe8ce;
@@ -458,6 +493,20 @@ def render_html(review: Mapping[str, object]) -> str:
       color: var(--muted);
       font-size: 13px;
       font-weight: 700;
+    }}
+    .stage {{
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 7px;
+      margin-left: 6px;
+      border-radius: 999px;
+      color: var(--amber);
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      font-size: 11px;
+      font-weight: 800;
+      vertical-align: middle;
     }}
     .model-details {{
       margin-top: 12px;
@@ -540,7 +589,7 @@ def render_html(review: Mapping[str, object]) -> str:
     <header class="topbar">
       <div>
         <h1>中国体彩 SP 世界杯预测</h1>
-        <p class="subtitle">基于模型概率 + 用户手动录入中国体彩胜平负 SP 的复盘页面</p>
+        <p class="subtitle">基于模型概率 + 用户手动录入中国体彩胜平负 SP 的复盘页面；每场总模拟 100 元，不构成投注建议</p>
       </div>
       <a class="github-link" href="{REPO_URL}">GitHub</a>
     </header>
@@ -577,7 +626,7 @@ def render_html(review: Mapping[str, object]) -> str:
     </section>
 
     <footer class="disclaimer">
-      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。示例 SP 和赛果只是 demo 占位，不代表官方中国体彩数据。模型概率不是保证，历史盈亏不能证明长期存在 edge。
+      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。示例 SP 和赛果只是 demo 占位，不代表官方中国体彩数据。每场总模拟金额为 100 元，投向当前模型概率下 edge 最大的一项；这不是自动下注或盈利保证。模型概率不是保证，历史盈亏不能证明长期存在 edge。
     </footer>
   </main>
 </body>
@@ -602,6 +651,7 @@ def _parse_row(raw: Mapping[str, str], line_no: int) -> dict:
         raise ValueError(f"line {line_no}: date, home and away are required")
     return {
         "date": date,
+        "stage": (raw.get("stage") or DEFAULT_STAGE).strip() or DEFAULT_STAGE,
         "home": home,
         "away": away,
         "neutral": _parse_bool(raw.get("neutral"), line_no),
@@ -638,6 +688,14 @@ def _parse_actual(value: object, line_no: int) -> str | None:
     if actual not in ACTUAL_TO_OUTCOME:
         raise ValueError(f"line {line_no}: actual must be H/D/A or blank")
     return actual
+
+
+def _stage_count(matches: Sequence[Mapping[str, object]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for match in matches:
+        stage = str(match.get("stage") or DEFAULT_STAGE)
+        counts[stage] = counts.get(stage, 0) + 1
+    return counts
 
 
 def _probability_vector(probabilities: Mapping[str, float] | Sequence[float]) -> list[float]:
@@ -759,7 +817,7 @@ def _render_card(match: Mapping[str, object]) -> str:
         <article class="match-card">
           <header class="match-head">
             <div>
-              <div class="date">{_html_escape(match['date'])}</div>
+              <div class="date">{_html_escape(match['date'])}<span class="stage">{_html_escape(match['stage'])}</span></div>
               <h3 class="match-title">{_html_escape(match['home'])}<span>vs</span>{_html_escape(match['away'])}</h3>
             </div>
             {status}
@@ -775,9 +833,14 @@ def _render_card(match: Mapping[str, object]) -> str:
 
 
 def _render_bet_column(match: Mapping[str, object], outcome: str) -> str:
-    hit = " hit" if match["actual_outcome"] == outcome else ""
+    classes = []
+    if match["allocation"][outcome] > 0:
+        classes.append("selected")
+    if match["actual_outcome"] == outcome:
+        classes.append("hit")
+    class_attr = "" if not classes else " " + " ".join(classes)
     return f"""
-            <div class="bet-column{hit}">
+            <div class="bet-column{class_attr}">
               <div class="bet-label"><span class="marker">{OUTCOME_MARKERS[outcome]}</span>{BET_LABELS[outcome]}</div>
               <div class="amount">{_fmt_currency(match["allocation"][outcome])}</div>
               <div class="sp">{_fmt_sp(match["sp"][outcome])}</div>

@@ -1,14 +1,15 @@
 # 示例数据：以下 SP 和赛果仅用于 demo 占位，不是官方中国体彩数据。
 # 请用户从合法渠道查看中国体彩竞彩足球胜平负 SP 后，手动替换为真实数据。
 # actual 留空表示待开奖；H/D/A 分别表示主胜/平局/客胜。
-date,home,away,neutral,sp_home,sp_draw,sp_away,actual
-2026-07-05,Brazil,Norway,true,1.83,3.77,4.88,
-2026-07-06,Mexico,England,true,5.60,3.95,1.66,
-2026-06-20,Paraguay,France,true,7.80,4.45,1.45,A
-2026-06-21,Canada,Morocco,true,2.72,3.18,2.63,D
-2026-06-22,Colombia,Ghana,true,1.94,3.36,4.05,H
-2026-06-23,Argentina,Cape Verde,true,1.22,5.80,10.50,H
-2026-06-24,Australia,Egypt,true,2.58,3.20,2.82,A
-2026-06-25,Switzerland,Algeria,true,2.06,3.28,3.72,D
-2026-06-26,Portugal,Croatia,true,1.86,3.44,4.40,H
-2026-06-27,Spain,Austria,true,1.72,3.62,4.90,A
+# stage 用于复盘区分小组赛、淘汰赛等赛段，不参与模型训练。
+date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual
+2026-07-05,淘汰赛,Brazil,Norway,true,1.83,3.77,4.88,
+2026-07-06,淘汰赛,Mexico,England,true,5.60,3.95,1.66,
+2026-06-20,小组赛,Paraguay,France,true,7.80,4.45,1.45,A
+2026-06-21,小组赛,Canada,Morocco,true,2.72,3.18,2.63,D
+2026-06-22,小组赛,Colombia,Ghana,true,1.94,3.36,4.05,H
+2026-06-23,小组赛,Argentina,Cape Verde,true,1.22,5.80,10.50,H
+2026-06-24,小组赛,Australia,Egypt,true,2.58,3.20,2.82,A
+2026-06-25,小组赛,Switzerland,Algeria,true,2.06,3.28,3.72,D
+2026-06-26,淘汰赛,Portugal,Croatia,true,1.86,3.44,4.40,H
+2026-06-27,淘汰赛,Spain,Austria,true,1.72,3.62,4.90,A
