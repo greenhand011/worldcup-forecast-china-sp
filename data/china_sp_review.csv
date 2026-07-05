@@ -4,7 +4,12 @@
 # actual 留空表示待开奖；H/D/A 分别表示主胜/平局/客胜。
 # stage 只用于展示小组赛、1/16、1/8、1/4、半决赛、三四名决赛、决赛等赛段，不参与模型训练。
 # TBD 表示赛程日期或淘汰赛对阵尚待官方确认；确认后请手动替换为项目识别的英文球队名。
+# 公开SP来源：https://trade.500.com/jczq/；抓取时间：2026-07-06 00:41:19；请赛前/赛后自行复核官方渠道。
 date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual
+2026-07-07,1/8决赛（公开SP）,Portugal,Spain,true,3.83,3.30,1.77,
+2026-07-07,1/8决赛（公开SP）,United States,Belgium,true,2.44,3.26,2.42,
+2026-07-08,1/8决赛（公开SP）,Argentina,Egypt,true,1.23,4.65,10.00,
+2026-07-08,1/8决赛（公开SP）,Switzerland,Colombia,true,2.91,2.82,2.32,
 TBD,小组赛 A组 第1轮,Mexico,South Africa,false,,,,
 TBD,小组赛 A组 第1轮,South Korea,Czech Republic,true,,,,
 TBD,小组赛 A组 第2轮,Mexico,South Korea,false,,,,

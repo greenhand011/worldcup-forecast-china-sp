@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 
 
-from . import china_sp, data, markets, predict
+from . import china_sp, china_sp_fetch, data, markets, predict
 from . import model as model_mod
 from . import ratings, simulate
 from .teams import HOSTS, INDEX
@@ -100,6 +100,24 @@ def cmd_china_sp_review(args):
     print(f"\n已生成静态网页：{output}")
 
 
+def cmd_china_sp_fetch(args):
+    fetched = china_sp_fetch.fetch_public_sp(args.source_url)
+    if not fetched:
+        print("未从公开页面找到世界杯胜平负 SP。")
+        return
+    for match in fetched:
+        print(
+            f"{match.date} {match.time} {match.stage} "
+            f"{match.home} vs {match.away} "
+            f"SP {match.sp_home:.2f}/{match.sp_draw:.2f}/{match.sp_away:.2f}"
+        )
+    if args.dry_run:
+        print(f"\n预览完成：找到 {len(fetched)} 场；未写入 CSV。")
+        return
+    count = china_sp_fetch.merge_public_sp_into_csv(args.input, fetched, source_url=args.source_url)
+    print(f"\n已写入 {count} 场公开 SP 到 {args.input}。")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="wcforecast",
                                  description="Structural + Bayesian World Cup forecaster.")
@@ -133,6 +151,12 @@ def main(argv=None):
     c.add_argument("--min-edge", type=float, default=0.03,
                    help="minimum edge required before simulating a 100-yuan review stake")
     c.set_defaults(func=cmd_china_sp_review)
+
+    fetch = sub.add_parser("china-sp-fetch", help="fetch public China SP rows into the review CSV")
+    fetch.add_argument("--input", default="data/china_sp_review.csv")
+    fetch.add_argument("--source-url", default=china_sp_fetch.DEFAULT_SOURCE_URL)
+    fetch.add_argument("--dry-run", action="store_true")
+    fetch.set_defaults(func=cmd_china_sp_fetch)
 
     args = ap.parse_args(argv)
     args.func(args)

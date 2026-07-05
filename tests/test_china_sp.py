@@ -176,3 +176,48 @@ def test_render_html_contains_redesigned_sections():
     html = china_sp.render_html(review)
     for text in ["未来预测", "历史复盘", "主胜下注", "平局下注", "客胜下注", "查看模型细节", "1/8决赛 第1场"]:
         assert text in html
+
+
+def test_known_fixture_without_sp_stays_in_folded_template_section(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "TBD,小组赛 A组 第1轮,Mexico,South Africa,false,,,,\n"
+        "2026-07-05,1/8决赛 第1场,Brazil,Norway,true,2.00,4.00,5.00,\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity)
+    assert review["summary"]["raw_pending_count"] == 2
+    assert review["summary"]["pending_count"] == 1
+    assert review["summary"]["template_count"] == 1
+    assert len(review["display_pending"]) == 1
+    assert len(review["template_pending"]) == 1
+
+
+def test_tbd_fixture_stays_in_folded_template_section(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_sp_away,actual\n".replace("sp_sp_away", "sp_away")
+        + "TBD,1/4决赛 第1场,TBD,TBD,true,,,,\n"
+        + "2026-07-05,1/8决赛 第1场,Brazil,Norway,true,2.00,4.00,5.00,\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity)
+    html = china_sp.render_html(review)
+    assert "未来预测 1" in html
+    assert "待录入赛程模板 1" in html
+    assert "展开查看 1 场待录入模板" in html
+
+
+def test_blank_sp_fixture_is_folded_instead_of_empty_main_card(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "TBD,小组赛 A组 第1轮,Brazil,Norway,true,,,,\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity)
+    html = china_sp.render_html(review)
+    assert "未来预测 0" in html
+    assert "待录入赛程模板 1" in html
+    assert "Brazil vs Norway" in html

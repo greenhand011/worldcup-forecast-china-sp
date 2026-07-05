@@ -17,11 +17,11 @@ The current version provides a 104-match 2026 World Cup template: 72 group-stage
 
 ## 功能 / Features
 
-- 读取手动录入的中国体彩胜平负 SP CSV。 / Read manually entered China Sports Lottery 1X2 SP values from CSV.
+- 读取手动录入或公开页面导入的中国体彩胜平负 SP CSV。 / Read manually entered or publicly imported China Sports Lottery 1X2 SP values from CSV.
 - 计算模型概率、公允赔率、edge、模拟买入和盈亏。 / Calculate model probabilities, fair odds, edge, simulated stake, and P&L.
 - 生成浅色双列卡片布局的静态 HTML 复盘页面。 / Generate a static light two-column card review page.
 - 支持 GitHub Pages 在线展示。 / Support online publishing through GitHub Pages.
-- 不包含自动下注、自动登录、购买彩票或爬取中国体彩网站功能。 / No automated betting, login, lottery purchase, or China Sports Lottery scraping.
+- 不包含自动下注、自动登录、购买彩票或绕过网站限制的功能。 / No automated betting, login, lottery purchase, or bypassing website restrictions.
 
 ## 亏损原因与修正 / Loss Diagnosis And Fix
 
@@ -66,6 +66,17 @@ python -m pip install -e .
 wcforecast china-sp-review
 open docs/china-sp-review.html
 ```
+
+导入公开 SP 展示数据 / Import public SP display data:
+
+```bash
+wcforecast china-sp-fetch
+wcforecast china-sp-review
+```
+
+`china-sp-fetch` 当前读取公开可访问的竞彩足球胜平负展示页，只导入 `nspf` 不让球胜平负三项 SP，并过滤世界杯比赛。它不会登录、不会下单、不会购买彩票；抓取到的 SP 仍建议按官方渠道复核。
+
+`china-sp-fetch` reads publicly accessible 1X2 SP display data, imports only non-handicap `nspf` home/draw/away SP rows, and filters World Cup matches. It does not log in, place bets, or purchase lottery tickets; fetched SP values should still be checked against official channels.
 
 ## CSV 数据格式 / CSV Format
 
