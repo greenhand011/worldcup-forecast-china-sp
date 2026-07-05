@@ -44,15 +44,15 @@
     <header class="topbar">
       <div>
         <h1>中国体彩 SP 世界杯预测</h1>
-        <p class="subtitle">基于独立模型概率 + 中国体彩胜平负 SP 的复盘页面；默认 edge-flat：只有正 edge 过阈值才模拟下注，不构成投注建议</p>
+        <p class="subtitle">基于独立模型概率 + 中国体彩胜平负 SP 的复盘页面；默认 favorite-flat：每场完整 SP 固定买入模型第一选择，不构成投注建议</p>
       </div>
       <a class="github-link" href="https://github.com/greenhand011/worldcup-forecast-china-sp">GitHub</a>
     </header>
 
     <section class="summary" aria-label="复盘汇总">
-      <div class="summary-item pnl positive"><span>累计盈亏</span><strong>+¥0.0</strong><div class="summary-note">ROI —<br>已下注结算 0 / 已结算 15</div></div>
+      <div class="summary-item pnl positive"><span>累计盈亏</span><strong>+¥148.0</strong><div class="summary-note">ROI 9.9%<br>已下注结算 15 / 已结算 15</div></div>
       <div class="summary-item"><span>今日预测</span><strong>2</strong></div>
-      <div class="summary-item"><span>今日实际下注</span><strong>¥0</strong></div>
+      <div class="summary-item"><span>今日实际下注</span><strong>¥200</strong></div>
       <div class="summary-item"><span>完赛待补赛果</span><strong>0</strong></div>
       <div class="summary-item"><span>已结算复盘</span><strong>15</strong></div>
       <div class="summary-item"><span>未来赛程</span><strong>4</strong></div>
@@ -60,12 +60,12 @@
 
     <div class="diagnosis">
       复盘说明：模型先独立给出 90 分钟主胜/平局/客胜概率，SP 只在预测之后用于比较、edge 和盈亏复盘。
-      默认策略是 edge-flat：edge = probability × SP - 1，只有最佳 edge 超过阈值才下注；没有正 edge 则观望。
-      这避免把每场 100 元强制拆到三项导致的结构性亏损，也避免用 15 场小样本反向调参造成过拟合。
+      默认策略是 favorite-flat：每场完整 SP 固定用 100 元买入模型概率最高的一项；edge 仍然展示为赛后价值检查，但不让低概率高赔率冷门主导下注。
+      这样既满足每场必须模拟下注，也避免把 100 元拆到三项造成结构性亏损；模型层不使用 SP，避免用小样本反向调参造成过拟合。
     </div>
 
     <section>
-      <div class="section-heading"><h2>今日预测 2</h2><span>date = today 且 actual 为空；只有过阈值的正 edge 会产生今日实际下注</span></div>
+      <div class="section-heading"><h2>今日预测 2</h2><span>date = today 且 actual 为空；每场完整 SP 默认买入模型第一选择</span></div>
       <div class="card-grid">
         <article class="match-card">
           <header class="match-head">
@@ -73,14 +73,14 @@
               <div class="date">2026-07-06<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">巴西 vs 挪威</h3>
             </div>
-            <span class="status waiting">今日观望</span>
+            <span class="status staked">今日已模拟下注</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">巴西</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.55</div>
             </div>
 
@@ -105,7 +105,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>49.3%</div><div class="detail-value"><b>平局</b>29.0%</div><div class="detail-value"><b>客胜</b>21.7%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.03</div><div class="detail-value"><b>平局</b>3.45</div><div class="detail-value"><b>客胜</b>4.62</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-23.5%</div><div class="detail-value positive"><b>平局</b>+6.7%</div><div class="detail-value positive"><b>客胜</b>+1.8%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为平局 +6.7%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 49.3%，edge -23.5%</div></div>
             </div>
           </details>
         </article>
@@ -117,7 +117,7 @@
               <div class="date">2026-07-06<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">墨西哥 vs 英格兰</h3>
             </div>
-            <span class="status waiting">今日观望</span>
+            <span class="status staked">今日已模拟下注</span>
           </header>
           <div class="bet-grid">
 
@@ -135,10 +135,10 @@
               <div class="sp">@2.86</div>
             </div>
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
               <div class="bet-team">英格兰</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@2.14</div>
             </div>
           </div>
@@ -149,7 +149,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>23.3%</div><div class="detail-value"><b>平局</b>29.2%</div><div class="detail-value"><b>客胜</b>47.5%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>4.29</div><div class="detail-value"><b>平局</b>3.43</div><div class="detail-value"><b>客胜</b>2.11</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-25.3%</div><div class="detail-value negative"><b>平局</b>-16.6%</div><div class="detail-value positive"><b>客胜</b>+1.6%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">无正edge，观望（最佳 客胜 +1.6%）</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择客胜，模型概率 47.5%，edge +1.6%</div></div>
             </div>
           </details>
         </article>
@@ -157,7 +157,7 @@
     </section>
 
     <section>
-      <div class="section-heading"><h2>历史复盘 15</h2><span>已下注结算 0 / 已结算 15；累计盈亏 +¥0.0</span></div>
+      <div class="section-heading"><h2>历史复盘 15</h2><span>已下注结算 15 / 已结算 15；盈利下注率 73.3%；ROI 9.9%；累计盈亏 +¥148.0</span></div>
       <div class="card-grid">
         <article class="match-card">
           <header class="match-head">
@@ -165,7 +165,7 @@
               <div class="date">2026-06-29<span class="stage">小组赛（公开SP）</span></div>
               <h3 class="match-title">南非 vs 加拿大</h3>
             </div>
-            <span class="status waiting">实际 客胜，观望未下注</span>
+            <span class="status positive">实际 客胜 +¥50.0</span>
           </header>
           <div class="bet-grid">
 
@@ -183,10 +183,10 @@
               <div class="sp">@3.45</div>
             </div>
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
               <div class="bet-team">加拿大</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.50</div>
             </div>
           </div>
@@ -197,7 +197,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>19.7%</div><div class="detail-value"><b>平局</b>30.0%</div><div class="detail-value"><b>客胜</b>50.3%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>5.08</div><div class="detail-value"><b>平局</b>3.33</div><div class="detail-value"><b>客胜</b>1.99</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value positive"><b>主胜</b>+14.1%</div><div class="detail-value positive"><b>平局</b>+3.5%</div><div class="detail-value negative"><b>客胜</b>-24.5%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为主胜 +14.1%，但模型第一选择是客胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择客胜，模型概率 50.3%，edge -24.5%</div></div>
             </div>
           </details>
         </article>
@@ -209,14 +209,14 @@
               <div class="date">2026-06-30<span class="stage">小组赛（公开SP）</span></div>
               <h3 class="match-title">巴西 vs 日本</h3>
             </div>
-            <span class="status waiting">实际 主胜，观望未下注</span>
+            <span class="status positive">实际 主胜 +¥52.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">巴西</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.52</div>
             </div>
 
@@ -241,7 +241,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>45.1%</div><div class="detail-value"><b>平局</b>29.9%</div><div class="detail-value"><b>客胜</b>25.0%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.22</div><div class="detail-value"><b>平局</b>3.34</div><div class="detail-value"><b>客胜</b>4.00</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-31.5%</div><div class="detail-value positive"><b>平局</b>+11.3%</div><div class="detail-value positive"><b>客胜</b>+23.7%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +23.7%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 45.1%，edge -31.5%</div></div>
             </div>
           </details>
         </article>
@@ -253,14 +253,14 @@
               <div class="date">2026-06-30<span class="stage">小组赛（公开SP）</span></div>
               <h3 class="match-title">德国 vs 巴拉圭</h3>
             </div>
-            <span class="status waiting">实际 平局，观望未下注</span>
+            <span class="status negative">实际 平局 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">德国</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.22</div>
             </div>
 
@@ -285,7 +285,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>59.6%</div><div class="detail-value"><b>平局</b>25.8%</div><div class="detail-value"><b>客胜</b>14.5%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>1.68</div><div class="detail-value"><b>平局</b>3.87</div><div class="detail-value"><b>客胜</b>6.89</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-27.2%</div><div class="detail-value positive"><b>平局</b>+29.2%</div><div class="detail-value positive"><b>客胜</b>+32.1%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +32.1%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 59.6%，edge -27.2%</div></div>
             </div>
           </details>
         </article>
@@ -297,14 +297,14 @@
               <div class="date">2026-06-30<span class="stage">小组赛（公开SP）</span></div>
               <h3 class="match-title">荷兰 vs 摩洛哥</h3>
             </div>
-            <span class="status waiting">实际 平局，观望未下注</span>
+            <span class="status negative">实际 平局 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">荷兰</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@2.00</div>
             </div>
 
@@ -329,7 +329,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>39.6%</div><div class="detail-value"><b>平局</b>30.7%</div><div class="detail-value"><b>客胜</b>29.8%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.53</div><div class="detail-value"><b>平局</b>3.26</div><div class="detail-value"><b>客胜</b>3.36</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-20.9%</div><div class="detail-value negative"><b>平局</b>-10.5%</div><div class="detail-value positive"><b>客胜</b>+3.7%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">无正edge，观望（最佳 客胜 +3.7%）</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 39.6%，edge -20.9%</div></div>
             </div>
           </details>
         </article>
@@ -341,14 +341,14 @@
               <div class="date">2026-07-01<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">法国 vs 瑞典</h3>
             </div>
-            <span class="status waiting">实际 主胜，观望未下注</span>
+            <span class="status positive">实际 主胜 +¥16.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">法国</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.16</div>
             </div>
 
@@ -373,7 +373,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>60.4%</div><div class="detail-value"><b>平局</b>25.1%</div><div class="detail-value"><b>客胜</b>14.5%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>1.66</div><div class="detail-value"><b>平局</b>3.99</div><div class="detail-value"><b>客胜</b>6.89</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-30.0%</div><div class="detail-value positive"><b>平局</b>+45.5%</div><div class="detail-value positive"><b>客胜</b>+52.5%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +52.5%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 60.4%，edge -30.0%</div></div>
             </div>
           </details>
         </article>
@@ -385,7 +385,7 @@
               <div class="date">2026-07-01<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">科特迪瓦 vs 挪威</h3>
             </div>
-            <span class="status waiting">实际 客胜，观望未下注</span>
+            <span class="status positive">实际 客胜 +¥80.0</span>
           </header>
           <div class="bet-grid">
 
@@ -403,10 +403,10 @@
               <div class="sp">@3.38</div>
             </div>
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
               <div class="bet-team">挪威</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.80</div>
             </div>
           </div>
@@ -417,7 +417,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>29.9%</div><div class="detail-value"><b>平局</b>31.7%</div><div class="detail-value"><b>客胜</b>38.4%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>3.35</div><div class="detail-value"><b>平局</b>3.15</div><div class="detail-value"><b>客胜</b>2.60</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value positive"><b>主胜</b>+7.6%</div><div class="detail-value positive"><b>平局</b>+7.2%</div><div class="detail-value negative"><b>客胜</b>-30.9%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为主胜 +7.6%，但模型第一选择是客胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择客胜，模型概率 38.4%，edge -30.9%</div></div>
             </div>
           </details>
         </article>
@@ -429,14 +429,14 @@
               <div class="date">2026-07-01<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">墨西哥 vs 厄瓜多尔</h3>
             </div>
-            <span class="status waiting">实际 主胜，观望未下注</span>
+            <span class="status positive">实际 主胜 +¥102.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">墨西哥</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@2.02</div>
             </div>
 
@@ -461,7 +461,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>41.8%</div><div class="detail-value"><b>平局</b>31.3%</div><div class="detail-value"><b>客胜</b>26.9%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.39</div><div class="detail-value"><b>平局</b>3.20</div><div class="detail-value"><b>客胜</b>3.72</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-15.5%</div><div class="detail-value negative"><b>平局</b>-18.7%</div><div class="detail-value positive"><b>客胜</b>+7.7%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +7.7%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 41.8%，edge -15.5%</div></div>
             </div>
           </details>
         </article>
@@ -473,14 +473,14 @@
               <div class="date">2026-07-02<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">比利时 vs 塞内加尔</h3>
             </div>
-            <span class="status waiting">实际 平局，观望未下注</span>
+            <span class="status negative">实际 平局 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">比利时</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.97</div>
             </div>
 
@@ -505,7 +505,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>45.0%</div><div class="detail-value"><b>平局</b>30.3%</div><div class="detail-value"><b>客胜</b>24.7%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.22</div><div class="detail-value"><b>平局</b>3.30</div><div class="detail-value"><b>客胜</b>4.04</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-11.4%</div><div class="detail-value negative"><b>平局</b>-9.7%</div><div class="detail-value negative"><b>客胜</b>-13.7%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">无正edge，观望（最佳 平局 -9.7%）</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 45.0%，edge -11.4%</div></div>
             </div>
           </details>
         </article>
@@ -517,14 +517,14 @@
               <div class="date">2026-07-02<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">美国 vs 波黑</h3>
             </div>
-            <span class="status waiting">实际 主胜，观望未下注</span>
+            <span class="status positive">实际 主胜 +¥22.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">美国</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.22</div>
             </div>
 
@@ -549,7 +549,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>60.6%</div><div class="detail-value"><b>平局</b>25.6%</div><div class="detail-value"><b>客胜</b>13.7%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>1.65</div><div class="detail-value"><b>平局</b>3.90</div><div class="detail-value"><b>客胜</b>7.28</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-26.0%</div><div class="detail-value positive"><b>平局</b>+25.9%</div><div class="detail-value positive"><b>客胜</b>+29.2%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +29.2%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 60.6%，edge -26.0%</div></div>
             </div>
           </details>
         </article>
@@ -561,14 +561,14 @@
               <div class="date">2026-07-03<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">葡萄牙 vs 克罗地亚</h3>
             </div>
-            <span class="status waiting">实际 主胜，观望未下注</span>
+            <span class="status positive">实际 主胜 +¥57.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">葡萄牙</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.57</div>
             </div>
 
@@ -593,7 +593,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>43.1%</div><div class="detail-value"><b>平局</b>30.3%</div><div class="detail-value"><b>客胜</b>26.6%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.32</div><div class="detail-value"><b>平局</b>3.30</div><div class="detail-value"><b>客胜</b>3.76</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-32.4%</div><div class="detail-value positive"><b>平局</b>+0.6%</div><div class="detail-value positive"><b>客胜</b>+39.0%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +39.0%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 43.1%，edge -32.4%</div></div>
             </div>
           </details>
         </article>
@@ -605,14 +605,14 @@
               <div class="date">2026-07-03<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">西班牙 vs 奥地利</h3>
             </div>
-            <span class="status waiting">实际 主胜，观望未下注</span>
+            <span class="status positive">实际 主胜 +¥18.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">西班牙</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.18</div>
             </div>
 
@@ -637,7 +637,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>58.0%</div><div class="detail-value"><b>平局</b>25.9%</div><div class="detail-value"><b>客胜</b>16.0%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>1.72</div><div class="detail-value"><b>平局</b>3.85</div><div class="detail-value"><b>客胜</b>6.23</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-31.5%</div><div class="detail-value positive"><b>平局</b>+37.5%</div><div class="detail-value positive"><b>客胜</b>+72.5%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +72.5%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 58.0%，edge -31.5%</div></div>
             </div>
           </details>
         </article>
@@ -649,14 +649,14 @@
               <div class="date">2026-07-03<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">瑞士 vs 阿尔及利亚</h3>
             </div>
-            <span class="status waiting">实际 主胜，观望未下注</span>
+            <span class="status positive">实际 主胜 +¥74.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">瑞士</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.74</div>
             </div>
 
@@ -681,7 +681,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>40.3%</div><div class="detail-value"><b>平局</b>31.3%</div><div class="detail-value"><b>客胜</b>28.4%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.48</div><div class="detail-value"><b>平局</b>3.19</div><div class="detail-value"><b>客胜</b>3.52</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-30.0%</div><div class="detail-value negative"><b>平局</b>-1.0%</div><div class="detail-value positive"><b>客胜</b>+19.3%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +19.3%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 40.3%，edge -30.0%</div></div>
             </div>
           </details>
         </article>
@@ -693,14 +693,14 @@
               <div class="date">2026-07-04<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">澳大利亚 vs 埃及</h3>
             </div>
-            <span class="status waiting">实际 平局，观望未下注</span>
+            <span class="status negative">实际 平局 -¥100.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">澳大利亚</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@3.20</div>
             </div>
 
@@ -725,7 +725,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>35.3%</div><div class="detail-value"><b>平局</b>32.5%</div><div class="detail-value"><b>客胜</b>32.1%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.83</div><div class="detail-value"><b>平局</b>3.07</div><div class="detail-value"><b>客胜</b>3.11</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value positive"><b>主胜</b>+13.0%</div><div class="detail-value negative"><b>平局</b>-12.2%</div><div class="detail-value negative"><b>客胜</b>-28.0%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：主胜 edge +13.0%，但模型概率仅 35.3%，低于稳健阈值 40.0%</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 35.3%，edge +13.0%</div></div>
             </div>
           </details>
         </article>
@@ -737,14 +737,14 @@
               <div class="date">2026-07-04<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">哥伦比亚 vs 加纳</h3>
             </div>
-            <span class="status waiting">实际 主胜，观望未下注</span>
+            <span class="status positive">实际 主胜 +¥30.0</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">哥伦比亚</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.30</div>
             </div>
 
@@ -769,7 +769,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>53.7%</div><div class="detail-value"><b>平局</b>28.7%</div><div class="detail-value"><b>客胜</b>17.6%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>1.86</div><div class="detail-value"><b>平局</b>3.49</div><div class="detail-value"><b>客胜</b>5.67</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-30.2%</div><div class="detail-value positive"><b>平局</b>+21.9%</div><div class="detail-value positive"><b>客胜</b>+41.1%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +41.1%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 53.7%，edge -30.2%</div></div>
             </div>
           </details>
         </article>
@@ -781,7 +781,7 @@
               <div class="date">2026-07-05<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">加拿大 vs 摩洛哥</h3>
             </div>
-            <span class="status waiting">实际 客胜，观望未下注</span>
+            <span class="status positive">实际 客胜 +¥47.0</span>
           </header>
           <div class="bet-grid">
 
@@ -799,10 +799,10 @@
               <div class="sp">@3.62</div>
             </div>
 
-            <div class="bet-column hit">
+            <div class="bet-column selected hit">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
               <div class="bet-team">摩洛哥</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.47</div>
             </div>
           </div>
@@ -813,7 +813,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>27.7%</div><div class="detail-value"><b>平局</b>31.2%</div><div class="detail-value"><b>客胜</b>41.1%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>3.61</div><div class="detail-value"><b>平局</b>3.21</div><div class="detail-value"><b>客胜</b>2.43</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value positive"><b>主胜</b>+60.2%</div><div class="detail-value positive"><b>平局</b>+12.8%</div><div class="detail-value negative"><b>客胜</b>-39.5%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为主胜 +60.2%，但模型第一选择是客胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择客胜，模型概率 41.1%，edge -39.5%</div></div>
             </div>
           </details>
         </article>
@@ -834,7 +834,7 @@
               <div class="date">2026-07-07<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">葡萄牙 vs 西班牙</h3>
             </div>
-            <span class="status waiting">观望</span>
+            <span class="status staked">待开奖</span>
           </header>
           <div class="bet-grid">
 
@@ -852,10 +852,10 @@
               <div class="sp">@3.30</div>
             </div>
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">客</span>客胜下注</div>
               <div class="bet-team">西班牙</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.77</div>
             </div>
           </div>
@@ -866,7 +866,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>27.2%</div><div class="detail-value"><b>平局</b>29.5%</div><div class="detail-value"><b>客胜</b>43.3%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>3.68</div><div class="detail-value"><b>平局</b>3.39</div><div class="detail-value"><b>客胜</b>2.31</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value positive"><b>主胜</b>+4.2%</div><div class="detail-value negative"><b>平局</b>-2.5%</div><div class="detail-value negative"><b>客胜</b>-23.4%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">无正edge，观望（最佳 主胜 +4.2%）</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择客胜，模型概率 43.3%，edge -23.4%</div></div>
             </div>
           </details>
         </article>
@@ -878,14 +878,14 @@
               <div class="date">2026-07-07<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">美国 vs 比利时</h3>
             </div>
-            <span class="status waiting">观望</span>
+            <span class="status staked">待开奖</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">美国</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@2.44</div>
             </div>
 
@@ -910,7 +910,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>35.6%</div><div class="detail-value"><b>平局</b>30.9%</div><div class="detail-value"><b>客胜</b>33.5%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.81</div><div class="detail-value"><b>平局</b>3.24</div><div class="detail-value"><b>客胜</b>2.99</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-13.1%</div><div class="detail-value positive"><b>平局</b>+0.7%</div><div class="detail-value negative"><b>客胜</b>-19.0%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">无正edge，观望（最佳 平局 +0.7%）</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 35.6%，edge -13.1%</div></div>
             </div>
           </details>
         </article>
@@ -922,14 +922,14 @@
               <div class="date">2026-07-08<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">阿根廷 vs 埃及</h3>
             </div>
-            <span class="status waiting">观望</span>
+            <span class="status staked">待开奖</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">阿根廷</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@1.23</div>
             </div>
 
@@ -954,7 +954,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>61.7%</div><div class="detail-value"><b>平局</b>24.9%</div><div class="detail-value"><b>客胜</b>13.4%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>1.62</div><div class="detail-value"><b>平局</b>4.02</div><div class="detail-value"><b>客胜</b>7.48</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value negative"><b>主胜</b>-24.1%</div><div class="detail-value positive"><b>平局</b>+15.8%</div><div class="detail-value positive"><b>客胜</b>+33.7%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">观望：最佳edge为客胜 +33.7%，但模型第一选择是主胜</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 61.7%，edge -24.1%</div></div>
             </div>
           </details>
         </article>
@@ -966,14 +966,14 @@
               <div class="date">2026-07-08<span class="stage">1/8决赛（公开SP）</span></div>
               <h3 class="match-title">瑞士 vs 哥伦比亚</h3>
             </div>
-            <span class="status waiting">观望</span>
+            <span class="status staked">待开奖</span>
           </header>
           <div class="bet-grid">
 
-            <div class="bet-column">
+            <div class="bet-column selected">
               <div class="bet-label"><span class="marker">主</span>主胜下注</div>
               <div class="bet-team">瑞士</div>
-              <div class="amount">¥0</div>
+              <div class="amount">¥100</div>
               <div class="sp">@2.91</div>
             </div>
 
@@ -998,7 +998,7 @@
               <div class="detail-row"><div class="detail-label">模型概率</div><div class="detail-value"><b>主胜</b>34.7%</div><div class="detail-value"><b>平局</b>31.5%</div><div class="detail-value"><b>客胜</b>33.9%</div></div>
               <div class="detail-row"><div class="detail-label">公允赔率</div><div class="detail-value"><b>主胜</b>2.89</div><div class="detail-value"><b>平局</b>3.18</div><div class="detail-value"><b>客胜</b>2.95</div></div>
               <div class="detail-row"><div class="detail-label">Edge</div><div class="detail-value positive"><b>主胜</b>+0.8%</div><div class="detail-value negative"><b>平局</b>-11.2%</div><div class="detail-value negative"><b>客胜</b>-21.5%</div></div>
-              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">无正edge，观望（最佳 主胜 +0.8%）</div></div>
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">favorite-flat：买入模型第一选择主胜，模型概率 34.7%，edge +0.8%</div></div>
             </div>
           </details>
         </article>

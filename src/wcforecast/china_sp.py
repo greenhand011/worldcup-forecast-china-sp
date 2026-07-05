@@ -1,7 +1,7 @@
 """China Sports Lottery SP review helpers.
 
 SP values are post-prediction review data only. They are never used as model inputs.
-The default staking layer is value/edge based: no positive edge means no simulated stake.
+The default staking layer is model-favorite based: every complete-SP match receives one flat simulated stake on the model's highest-probability outcome. SP remains post-prediction review data only.
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ ACTUAL_LABELS = {"H": "主胜", "D": "平局", "A": "客胜", None: "待开奖"}
 DEFAULT_STAGE = "未标注赛段"
 TBD_NAMES = {"", "TBD", "待定", "待定球队", "未定", "To be decided"}
 REPO_URL = "https://github.com/greenhand011/worldcup-forecast-china-sp"
-STRATEGIES = {"edge-flat", "prob-split", "kelly"}
+STRATEGIES = {"favorite-flat", "edge-flat", "prob-split", "kelly"}
 
 TEAM_ZH = {
     "Algeria": "阿尔及利亚",
@@ -136,6 +136,43 @@ def allocate_bankroll(
     max_i = max(range(len(probs)), key=lambda i: probs[i])
     amounts[max_i] += bankroll - sum(amounts)
     return dict(zip(OUTCOMES, amounts))
+
+
+def allocate_model_favorite(
+    probabilities: Mapping[str, float],
+    bankroll: int = 100,
+    unit: int = 1,
+    edge: Mapping[str, float | None] | None = None,
+) -> tuple[dict[str, int], str, str]:
+    """Mandatory flat stake on the model's highest-probability outcome.
+
+    This is the default when the review must place a simulated stake on every
+    complete-SP match. It avoids the two failure modes seen in review:
+    probability-splitting leaks bankroll across losing outcomes, while pure
+    edge selection can chase low-probability long shots. SP still does not feed
+    the model; it is reported only as a post-prediction value check.
+    """
+    bankroll = int(bankroll)
+    unit = int(unit)
+    if bankroll <= 0:
+        raise ValueError("bankroll must be positive")
+    if unit <= 0:
+        raise ValueError("unit must be positive")
+    if bankroll < unit:
+        raise ValueError("bankroll must be at least one unit")
+
+    favorite = max(OUTCOMES, key=lambda outcome: float(probabilities[outcome]))
+    stake = _round_to_unit(bankroll, unit)
+    stake = min(stake, bankroll)
+    if stake <= 0:
+        raise ValueError("stake must be positive")
+    edge_text = ""
+    if edge is not None and edge.get(favorite) is not None:
+        edge_text = f"，edge {_fmt_edge(float(edge[favorite]))}"
+    return {outcome: stake if outcome == favorite else 0 for outcome in OUTCOMES}, favorite, (
+        f"favorite-flat：买入模型第一选择{OUTCOME_LABELS[favorite]}，"
+        f"模型概率 {_fmt_pct(float(probabilities[favorite]))}{edge_text}"
+    )
 
 
 def allocate_best_edge(
@@ -253,13 +290,13 @@ def review_match(
     bankroll: int = 100,
     unit: int = 1,
     min_edge: float = 0.05,
-    strategy: str = "edge-flat",
+    strategy: str = "favorite-flat",
     kelly_fraction: float = 0.25,
     max_stake_fraction: float = 1.0,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
     """Review one SP row against calibrated model probabilities and a staking strategy."""
-    strategy = str(strategy or "edge-flat")
+    strategy = str(strategy or "favorite-flat")
     if strategy not in STRATEGIES:
         raise ValueError(f"unknown strategy: {strategy}")
 
@@ -308,13 +345,20 @@ def review_match(
                     kelly_fraction=kelly_fraction,
                     max_stake_fraction=max_stake_fraction,
                 )
-            else:
+            elif strategy == "edge-flat":
                 allocation, selected_outcome, stake_status = allocate_best_edge(
                     edge,
                     bankroll=bankroll,
                     unit=unit,
                     min_edge=min_edge,
                     probabilities=probabilities,
+                )
+            else:
+                allocation, selected_outcome, stake_status = allocate_model_favorite(
+                    probabilities,
+                    bankroll=bankroll,
+                    unit=unit,
+                    edge=edge,
                 )
         else:
             allocation = _zero_allocation()
@@ -377,7 +421,7 @@ def build_review(
     bankroll: int = 100,
     unit: int = 1,
     min_edge: float = 0.05,
-    strategy: str = "edge-flat",
+    strategy: str = "favorite-flat",
     kelly_fraction: float = 0.25,
     max_stake_fraction: float = 1.0,
     today: str | date | None = None,
@@ -477,7 +521,7 @@ def format_console_table(review: Mapping[str, object]) -> str:
     body = ["  ".join(_pad(str(row[i]), widths[i]) for i in range(len(headers))) for row in rows]
     summary = review["summary"]
     footer = (
-        f"合计：策略 {review.get('strategy', 'edge-flat')}，"
+        f"合计：策略 {review.get('strategy', 'favorite-flat')}，"
         f"今日预测 {summary.get('today_pending_count', 0)} 场，"
         f"今日实际下注 {_fmt_console_currency(summary.get('today_stake_total', 0))}，"
         f"已下注结算 {summary.get('staked_settled_count', 0)}/{summary.get('settled_count', 0)}，"
@@ -555,7 +599,7 @@ def render_html(review: Mapping[str, object]) -> str:
     <header class="topbar">
       <div>
         <h1>中国体彩 SP 世界杯预测</h1>
-        <p class="subtitle">基于独立模型概率 + 中国体彩胜平负 SP 的复盘页面；默认 edge-flat：只有正 edge 过阈值才模拟下注，不构成投注建议</p>
+        <p class="subtitle">基于独立模型概率 + 中国体彩胜平负 SP 的复盘页面；默认 favorite-flat：每场完整 SP 固定买入模型第一选择，不构成投注建议</p>
       </div>
       <a class="github-link" href="{REPO_URL}">GitHub</a>
     </header>
@@ -571,12 +615,12 @@ def render_html(review: Mapping[str, object]) -> str:
 
     <div class="diagnosis">
       复盘说明：模型先独立给出 90 分钟主胜/平局/客胜概率，SP 只在预测之后用于比较、edge 和盈亏复盘。
-      默认策略是 edge-flat：edge = probability × SP - 1，只有最佳 edge 超过阈值才下注；没有正 edge 则观望。
-      这避免把每场 100 元强制拆到三项导致的结构性亏损，也避免用 15 场小样本反向调参造成过拟合。
+      默认策略是 favorite-flat：每场完整 SP 固定用 100 元买入模型概率最高的一项；edge 仍然展示为赛后价值检查，但不让低概率高赔率冷门主导下注。
+      这样既满足每场必须模拟下注，也避免把 100 元拆到三项造成结构性亏损；模型层不使用 SP，避免用小样本反向调参造成过拟合。
     </div>
 
     <section>
-      <div class="section-heading"><h2>今日预测 {len(today_pending)}</h2><span>date = today 且 actual 为空；只有过阈值的正 edge 会产生今日实际下注</span></div>
+      <div class="section-heading"><h2>今日预测 {len(today_pending)}</h2><span>date = today 且 actual 为空；每场完整 SP 默认买入模型第一选择</span></div>
       {_render_card_grid(today_pending, empty_text="今日暂无已录入 SP 的待结算比赛。")}
     </section>
 

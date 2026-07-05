@@ -157,10 +157,10 @@ def main(argv=None):
     c.add_argument("--output", default="docs/china-sp-review.html")
     c.add_argument("--bankroll", type=int, default=100)
     c.add_argument("--unit", type=int, default=1)
-    c.add_argument("--strategy", choices=sorted(china_sp.STRATEGIES), default="edge-flat",
-                   help="review staking layer: edge-flat(default), prob-split, or kelly")
+    c.add_argument("--strategy", choices=sorted(china_sp.STRATEGIES), default="favorite-flat",
+                   help="review staking layer: favorite-flat(default), edge-flat, prob-split, or kelly")
     c.add_argument("--min-edge", type=float, default=0.05,
-                   help="minimum positive edge required to simulate a stake")
+                   help="minimum positive edge used by edge-flat/kelly strategies")
     c.add_argument("--kelly-fraction", type=float, default=0.25,
                    help="fractional Kelly multiplier used only with --strategy kelly")
     c.add_argument("--max-stake-fraction", type=float, default=1.0,

@@ -45,8 +45,17 @@ def test_prob_split_is_available_but_not_default():
     assert "概率拆分" in reviewed["stake_status"]
 
 
+def test_favorite_flat_is_default_and_must_bet_model_favorite():
+    reviewed = review_for("H", row_overrides={"sp_home": 1.8, "sp_draw": 3.0, "sp_away": 4.0})
+    assert reviewed["allocation"] == {"home": 100, "draw": 0, "away": 0}
+    assert reviewed["stake_total"] == 100
+    assert reviewed["selected_outcome"] == "home"
+    assert reviewed["pnl"] == pytest.approx(80.0)
+    assert "favorite-flat" in reviewed["stake_status"]
+
+
 def test_edge_flat_observes_when_no_edge_exceeds_threshold():
-    reviewed = review_for(None, row_overrides={"sp_home": 1.8, "sp_draw": 3.0, "sp_away": 4.0})
+    reviewed = review_for(None, strategy="edge-flat", row_overrides={"sp_home": 1.8, "sp_draw": 3.0, "sp_away": 4.0})
     assert reviewed["allocation"] == {"home": 0, "draw": 0, "away": 0}
     assert reviewed["stake_total"] == 0
     assert reviewed["selected_outcome"] is None
@@ -54,15 +63,15 @@ def test_edge_flat_observes_when_no_edge_exceeds_threshold():
 
 
 def test_edge_flat_bets_one_flat_stake_on_best_positive_edge():
-    reviewed = review_for(None, row_overrides={"sp_home": 2.4, "sp_draw": 3.0, "sp_away": 4.0})
+    reviewed = review_for(None, strategy="edge-flat", row_overrides={"sp_home": 2.4, "sp_draw": 3.0, "sp_away": 4.0})
     assert reviewed["allocation"] == {"home": 100, "draw": 0, "away": 0}
     assert reviewed["selected_outcome"] == "home"
     assert reviewed["stake_total"] == 100
 
 
 def test_pnl_for_edge_flat_win_and_loss():
-    win = review_for("H", row_overrides={"sp_home": 2.4, "sp_draw": 3.0, "sp_away": 4.0})
-    loss = review_for("D", row_overrides={"sp_home": 2.4, "sp_draw": 3.0, "sp_away": 4.0})
+    win = review_for("H", strategy="edge-flat", row_overrides={"sp_home": 2.4, "sp_draw": 3.0, "sp_away": 4.0})
+    loss = review_for("D", strategy="edge-flat", row_overrides={"sp_home": 2.4, "sp_draw": 3.0, "sp_away": 4.0})
     assert win["pnl"] == pytest.approx(140.0)
     assert loss["pnl"] == pytest.approx(-100.0)
 
@@ -74,7 +83,7 @@ def test_observed_match_with_no_stake_has_zero_pnl_and_no_roi_capital(tmp_path):
         "2026-07-03,历史赛,Brazil,Norway,true,1.80,3.00,4.00,H\n",
         encoding="utf-8",
     )
-    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-06")
+    review = china_sp.build_review(path, FakeModel(), strategy="edge-flat", calibrator=identity, today="2026-07-06")
     assert review["settled"][0]["stake_total"] == 0
     assert review["settled"][0]["pnl"] == 0
     assert review["summary"]["history_stake_total"] == 0
@@ -135,7 +144,7 @@ def test_render_html_has_new_summary_and_section_order():
             "history_stake_total": 100.0,
             "stage_count": {"1/8决赛 第1场": 2},
         },
-        "strategy": "edge-flat",
+        "strategy": "favorite-flat",
         "today_pending": [review_for(None, row_overrides={"sp_home": 2.4})],
         "awaiting_result": [],
         "future_pending": [],
