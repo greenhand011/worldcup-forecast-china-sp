@@ -444,11 +444,11 @@ def build_review(
         )
         for row in rows
     ]
-    settled = [m for m in matches if m["status"] == "settled"]
+    settled = sorted([m for m in matches if m["status"] == "settled"], key=lambda m: _match_date(m) or date.min, reverse=True)
     raw_pending = [m for m in matches if m["status"] == "pending"]
-    today_pending = [m for m in raw_pending if _is_today_pending(m, review_date)]
-    awaiting_result = [m for m in raw_pending if _should_await_result(m, review_date)]
-    future_pending = [m for m in raw_pending if _is_future_pending(m, review_date)]
+    today_pending = sorted([m for m in raw_pending if _is_today_pending(m, review_date)], key=lambda m: _match_date(m) or date.min, reverse=True)
+    awaiting_result = sorted([m for m in raw_pending if _should_await_result(m, review_date)], key=lambda m: _match_date(m) or date.min, reverse=True)
+    future_pending = sorted([m for m in raw_pending if _is_future_pending(m, review_date)], key=lambda m: _match_date(m) or date.max)
     template_pending = [
         m for m in raw_pending
         if m not in today_pending and m not in awaiting_result and m not in future_pending
@@ -535,10 +535,10 @@ def format_console_table(review: Mapping[str, object]) -> str:
 def render_html(review: Mapping[str, object]) -> str:
     matches = list(review["matches"])
     today_pending = list(review.get("today_pending") or review.get("display_pending") or [])
-    awaiting_result = list(review.get("awaiting_result") or [])
-    future_pending = list(review.get("future_pending") or [])
+    awaiting_result = sorted(list(review.get("awaiting_result") or []), key=lambda m: _match_date(m) or date.min, reverse=True)
+    future_pending = sorted(list(review.get("future_pending") or []), key=lambda m: _match_date(m) or date.max)
     template_pending = list(review.get("template_pending") or [m for m in matches if m["status"] == "pending" and not _should_show_pending_card(m)])
-    settled = list(review.get("settled") or [m for m in matches if m["status"] == "settled"])
+    settled = sorted(list(review.get("settled") or [m for m in matches if m["status"] == "settled"]), key=lambda m: _match_date(m) or date.min, reverse=True)
     summary = review["summary"]
     hit_rate = summary.get("hit_rate")
     roi = summary.get("roi")
