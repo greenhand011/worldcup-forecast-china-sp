@@ -75,6 +75,13 @@ CHINESE_TEAM_MAP = {
     "乌兹别克斯坦": "Uzbekistan",
 }
 
+TEAM_ALIASES = {
+    "USA": "United States",
+    "U.S.A.": "United States",
+    "US": "United States",
+    "U.S.": "United States",
+}
+
 CSV_FIELDS = ("date", "stage", "home", "away", "neutral", "sp_home", "sp_draw", "sp_away", "actual")
 RESULT_FIELDS = ("date", "home", "away", "home_score_90", "away_score_90", "actual")
 
@@ -226,15 +233,19 @@ def merge_results_into_csv(csv_path: str | Path, results_path: str | Path) -> in
         return 0
 
     comments, rows = _read_review_csv(csv_path)
-    keyed = {_row_key(row): row for row in rows if _row_key(row) not in {("", "", "")}}
+    results_by_key = {
+        _row_key(result): result
+        for result in results
+        if _row_key(result) not in {("", "", "")}
+    }
     updated = 0
-    for result in results:
-        key = _row_key(result)
-        if key not in keyed:
+    for row in rows:
+        result = results_by_key.get(_row_key(row))
+        if result is None:
             continue
         actual = result.get("actual") or _actual_from_scores(result)
         if actual:
-            keyed[key]["actual"] = actual
+            row["actual"] = actual
             updated += 1
 
     with csv_path.open("w", encoding="utf-8", newline="") as f:
@@ -242,7 +253,7 @@ def merge_results_into_csv(csv_path: str | Path, results_path: str | Path) -> in
             f.write(comment.rstrip() + "\n")
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
         writer.writeheader()
-        writer.writerows(keyed.values())
+        writer.writerows(rows)
     return updated
 
 
@@ -348,7 +359,7 @@ def _read_results_csv(path: Path) -> list[dict[str, str]]:
 
 
 def _normalize_team(team: str) -> str:
-    return CHINESE_TEAM_MAP.get(team, team)
+    return TEAM_ALIASES.get(team, CHINESE_TEAM_MAP.get(team, team))
 
 
 def _actual_from_scores(row: dict[str, str]) -> str:

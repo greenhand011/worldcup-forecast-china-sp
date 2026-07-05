@@ -3,3 +3,22 @@
 # 如果淘汰赛 90 分钟打平、加时或点球分出晋级队，actual 仍然填 D。
 # 可填写 home_score_90/away_score_90 让程序自动推导 actual；也可以直接填写 actual=H/D/A。
 date,home,away,home_score_90,away_score_90,actual
+2026-06-29,South Africa,Canada,0,1,A
+2026-06-30,Brazil,Japan,2,1,H
+2026-06-30,Germany,Paraguay,1,1,D
+2026-06-30,Netherlands,Morocco,1,1,D
+2026-07-01,France,Sweden,3,0,H
+2026-07-01,Ivory Coast,Norway,1,2,A
+2026-07-01,Mexico,Ecuador,2,0,H
+2026-07-02,Belgium,Senegal,2,2,D
+2026-07-02,USA,Bosnia and Herzegovina,2,0,H
+2026-07-03,Portugal,Croatia,2,1,H
+2026-07-03,Spain,Austria,3,0,H
+2026-07-03,Switzerland,Algeria,2,0,H
+2026-07-04,Australia,Egypt,1,1,D
+2026-07-04,Colombia,Ghana,1,0,H
+2026-07-05,Canada,Morocco,0,3,A
+# Germany vs Paraguay：最终 Paraguay 点球晋级，但 90 分钟是 1-1，所以 actual = D。
+# Netherlands vs Morocco：最终 Morocco 点球晋级，但 90 分钟是 1-1，所以 actual = D。
+# Belgium vs Senegal：最终 Belgium 加时 3-2，但 90 分钟是 2-2，所以 actual = D。
+# Australia vs Egypt：最终 Egypt 点球晋级，但 90 分钟是 1-1，所以 actual = D。

@@ -6,21 +6,21 @@
 # TBD 表示赛程日期或淘汰赛对阵尚待官方确认；确认后请手动替换为项目识别的英文球队名。
 # 公开SP来源：https://trade.500.com/jczq/；抓取时间：2026-07-06 03:57:37；请赛前/赛后自行复核官方渠道。
 date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual
-2026-06-29,小组赛（公开SP）,South Africa,Canada,true,5.80,3.45,1.50,
-2026-06-30,小组赛（公开SP）,Brazil,Japan,true,1.52,3.72,4.95,
-2026-06-30,小组赛（公开SP）,Germany,Paraguay,true,1.22,5.00,9.10,
-2026-06-30,小组赛（公开SP）,Netherlands,Morocco,true,2.00,2.92,3.48,
-2026-07-01,1/8决赛（公开SP）,France,Sweden,true,1.16,5.80,10.50,
-2026-07-01,1/8决赛（公开SP）,Ivory Coast,Norway,true,3.60,3.38,1.80,
-2026-07-01,1/8决赛（公开SP）,Mexico,Ecuador,true,2.02,2.60,4.00,
-2026-07-02,1/8决赛（公开SP）,Belgium,Senegal,true,1.97,2.98,3.49,
-2026-07-02,1/8决赛（公开SP）,United States,Bosnia and Herzegovina,true,1.22,4.91,9.40,
-2026-07-03,1/8决赛（公开SP）,Portugal,Croatia,true,1.57,3.32,5.22,
-2026-07-03,1/8决赛（公开SP）,Spain,Austria,true,1.18,5.30,10.75,
-2026-07-03,1/8决赛（公开SP）,Switzerland,Algeria,true,1.74,3.16,4.20,
-2026-07-04,1/8决赛（公开SP）,Australia,Egypt,true,3.20,2.70,2.24,
-2026-07-04,1/8决赛（公开SP）,Colombia,Ghana,true,1.30,4.25,8.00,
-2026-07-05,1/8决赛（公开SP）,Canada,Morocco,true,5.78,3.62,1.47,
+2026-06-29,小组赛（公开SP）,South Africa,Canada,true,5.80,3.45,1.50,A
+2026-06-30,小组赛（公开SP）,Brazil,Japan,true,1.52,3.72,4.95,H
+2026-06-30,小组赛（公开SP）,Germany,Paraguay,true,1.22,5.00,9.10,D
+2026-06-30,小组赛（公开SP）,Netherlands,Morocco,true,2.00,2.92,3.48,D
+2026-07-01,1/8决赛（公开SP）,France,Sweden,true,1.16,5.80,10.50,H
+2026-07-01,1/8决赛（公开SP）,Ivory Coast,Norway,true,3.60,3.38,1.80,A
+2026-07-01,1/8决赛（公开SP）,Mexico,Ecuador,true,2.02,2.60,4.00,H
+2026-07-02,1/8决赛（公开SP）,Belgium,Senegal,true,1.97,2.98,3.49,D
+2026-07-02,1/8决赛（公开SP）,United States,Bosnia and Herzegovina,true,1.22,4.91,9.40,H
+2026-07-03,1/8决赛（公开SP）,Portugal,Croatia,true,1.57,3.32,5.22,H
+2026-07-03,1/8决赛（公开SP）,Spain,Austria,true,1.18,5.30,10.75,H
+2026-07-03,1/8决赛（公开SP）,Switzerland,Algeria,true,1.74,3.16,4.20,H
+2026-07-04,1/8决赛（公开SP）,Australia,Egypt,true,3.20,2.70,2.24,D
+2026-07-04,1/8决赛（公开SP）,Colombia,Ghana,true,1.30,4.25,8.00,H
+2026-07-05,1/8决赛（公开SP）,Canada,Morocco,true,5.78,3.62,1.47,A
 2026-07-06,1/8决赛（公开SP）,Brazil,Norway,true,1.55,3.68,4.70,
 2026-07-06,1/8决赛（公开SP）,Mexico,England,true,3.20,2.86,2.14,
 2026-07-07,1/8决赛（公开SP）,Portugal,Spain,true,3.83,3.30,1.77,
