@@ -87,7 +87,13 @@ def cmd_odds(args):
 
 def cmd_china_sp_review(args):
     m, _ = _build_2026_model(refit=False)
-    review = china_sp.build_review(args.input, m, bankroll=args.bankroll, unit=args.unit)
+    review = china_sp.build_review(
+        args.input,
+        m,
+        bankroll=args.bankroll,
+        unit=args.unit,
+        min_edge=args.min_edge,
+    )
     output = china_sp.write_html(review, args.output)
     print()
     print(china_sp.format_console_table(review))
@@ -124,6 +130,8 @@ def main(argv=None):
     c.add_argument("--output", default="docs/china-sp-review.html")
     c.add_argument("--bankroll", type=int, default=100)
     c.add_argument("--unit", type=int, default=100)
+    c.add_argument("--min-edge", type=float, default=0.03,
+                   help="minimum edge required before simulating a 100-yuan review stake")
     c.set_defaults(func=cmd_china_sp_review)
 
     args = ap.parse_args(argv)

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import html
+import sys
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Callable, Iterable, Mapping, Sequence
@@ -18,6 +19,7 @@ from . import predict
 from .teams import INDEX
 
 CSV_FIELDS = ("date", "home", "away", "neutral", "sp_home", "sp_draw", "sp_away", "actual")
+OPTIONAL_FIELDS = ("stage",)
 OUTCOMES = ("home", "draw", "away")
 OUTCOME_LABELS = {"home": "主胜", "draw": "平局", "away": "客胜"}
 BET_LABELS = {"home": "主胜下注", "draw": "平局下注", "away": "客胜下注"}
@@ -25,14 +27,15 @@ OUTCOME_MARKERS = {"home": "主", "draw": "平", "away": "客"}
 ACTUAL_TO_OUTCOME = {"H": "home", "D": "draw", "A": "away"}
 ACTUAL_LABELS = {"H": "主胜", "D": "平局", "A": "客胜", None: "待开奖"}
 DEFAULT_STAGE = "未标注赛段"
+TBD_NAMES = {"", "TBD", "待定", "待定球队", "未定", "To be decided"}
 REPO_URL = "https://github.com/greenhand011/worldcup-forecast-china-sp"
 
 
 def read_china_sp_csv(path: str | Path) -> list[dict]:
     """Read the manual China Sports Lottery SP CSV into typed match rows.
 
-    Lines starting with ``#`` are ignored so the committed demo file can explain
-    that its SP values are placeholders, not official China Sports Lottery data.
+    Lines starting with ``#`` are ignored so the committed template can explain
+    that SP values must be manually replaced with real China Sports Lottery data.
     """
     path = Path(path)
     if not path.exists():
@@ -64,8 +67,8 @@ def allocate_bankroll(
 ) -> dict[str, int]:
     """Allocate ``bankroll`` across H/D/A by probability, rounded to ``unit``.
 
-    The rounded allocations are forced to sum exactly to ``bankroll`` by adding
-    the residual to the largest-probability outcome.
+    Kept for the README-style probability split demonstration and unit tests.
+    The China SP page uses :func:`allocate_best_edge` by default.
     """
     bankroll = int(bankroll)
     unit = int(unit)
@@ -87,15 +90,16 @@ def allocate_bankroll(
 
 
 def allocate_best_edge(
-    edge: Mapping[str, float],
+    edge: Mapping[str, float | None],
     bankroll: int = 100,
     unit: int = 100,
-) -> dict[str, int]:
-    """Put one flat review stake on the outcome with the largest model edge.
+    min_edge: float = 0.0,
+) -> tuple[dict[str, int], str | None, str]:
+    """Put one flat review stake on the largest positive edge.
 
     This is a review-only stake selection layer. SP values still do not enter the
-    model; they are used after prediction to choose which single 100-yuan outcome
-    would have the highest expected return for that manually entered SP snapshot.
+    model; they are used after prediction to decide whether a single 100-yuan
+    review stake has positive expected value for that manually entered SP snapshot.
     """
     bankroll = int(bankroll)
     unit = int(unit)
@@ -106,8 +110,13 @@ def allocate_best_edge(
     if bankroll < unit or bankroll % unit != 0:
         raise ValueError("bankroll must be a positive multiple of unit")
 
+    if any(edge[outcome] is None for outcome in OUTCOMES):
+        return _zero_allocation(), None, "待录入SP"
+
     best = max(OUTCOMES, key=lambda outcome: float(edge[outcome]))
-    return {outcome: bankroll if outcome == best else 0 for outcome in OUTCOMES}
+    if float(edge[best]) <= float(min_edge):
+        return _zero_allocation(), None, "无正edge，观望"
+    return {outcome: bankroll if outcome == best else 0 for outcome in OUTCOMES}, best, "模拟买入"
 
 
 def review_match(
@@ -115,28 +124,46 @@ def review_match(
     model,
     bankroll: int = 100,
     unit: int = 100,
+    min_edge: float = 0.0,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
     """Review one manually-entered SP row against calibrated model probabilities."""
     home = str(row["home"]).strip()
     away = str(row["away"]).strip()
-    if home not in INDEX or away not in INDEX:
+    unresolved = _is_tbd(home) or _is_tbd(away)
+    if not unresolved and (home not in INDEX or away not in INDEX):
         raise ValueError(f"unknown team(s): {home} vs {away}")
 
     neutral = bool(row["neutral"])
-    raw = model.match_probs(home, away, home_advantage=0.0 if neutral else 1.0)
-    calibrated = np.asarray(calibrator(raw), dtype=float)
-    if calibrated.shape != (3,):
-        raise ValueError("calibrator must return a length-3 probability vector")
+    sp = {
+        "home": row.get("sp_home"),
+        "draw": row.get("sp_draw"),
+        "away": row.get("sp_away"),
+    }
 
-    probabilities = dict(zip(OUTCOMES, (float(x) for x in calibrated)))
-    sp = {"home": float(row["sp_home"]), "draw": float(row["sp_draw"]), "away": float(row["sp_away"])}
-    fair_odds = {outcome: 1.0 / probabilities[outcome] for outcome in OUTCOMES}
-    edge = {outcome: probabilities[outcome] * sp[outcome] - 1.0 for outcome in OUTCOMES}
-    allocation = allocate_best_edge(edge, bankroll=bankroll, unit=unit)
-    selected_outcome = max(OUTCOMES, key=lambda outcome: allocation[outcome])
+    if unresolved:
+        probabilities = None
+        fair_odds = None
+        edge = {outcome: None for outcome in OUTCOMES}
+        allocation = _zero_allocation()
+        selected_outcome = None
+        stake_status = "对阵待定"
+    else:
+        raw = model.match_probs(home, away, home_advantage=0.0 if neutral else 1.0)
+        calibrated = np.asarray(calibrator(raw), dtype=float)
+        if calibrated.shape != (3,):
+            raise ValueError("calibrator must return a length-3 probability vector")
+        probabilities = dict(zip(OUTCOMES, (float(x) for x in calibrated)))
+        fair_odds = {outcome: 1.0 / probabilities[outcome] for outcome in OUTCOMES}
+        edge = {
+            outcome: None if sp[outcome] is None else probabilities[outcome] * float(sp[outcome]) - 1.0
+            for outcome in OUTCOMES
+        }
+        allocation, selected_outcome, stake_status = allocate_best_edge(
+            edge, bankroll=bankroll, unit=unit, min_edge=min_edge
+        )
+
     stake_total = sum(allocation.values())
-
     actual = row.get("actual")
     actual = None if actual in ("", None) else str(actual).strip().upper()
     if actual and actual not in ACTUAL_TO_OUTCOME:
@@ -144,7 +171,8 @@ def review_match(
 
     if actual:
         actual_outcome = ACTUAL_TO_OUTCOME[actual]
-        pnl = allocation[actual_outcome] * sp[actual_outcome] - stake_total
+        actual_sp = sp[actual_outcome]
+        pnl = (allocation[actual_outcome] * float(actual_sp) - stake_total) if stake_total else 0.0
         status = "settled"
     else:
         actual_outcome = None
@@ -154,9 +182,10 @@ def review_match(
     return {
         "date": str(row["date"]).strip(),
         "stage": str(row.get("stage") or DEFAULT_STAGE).strip() or DEFAULT_STAGE,
-        "home": home,
-        "away": away,
+        "home": home or "TBD",
+        "away": away or "TBD",
         "neutral": neutral,
+        "unresolved": unresolved,
         "probabilities": probabilities,
         "sp": sp,
         "fair_odds": fair_odds,
@@ -164,6 +193,7 @@ def review_match(
         "allocation": allocation,
         "selected_outcome": selected_outcome,
         "stake_total": stake_total,
+        "stake_status": stake_status,
         "actual": actual,
         "actual_outcome": actual_outcome,
         "actual_label": ACTUAL_LABELS[actual],
@@ -171,6 +201,7 @@ def review_match(
         "status": status,
         "bankroll": int(bankroll),
         "unit": int(unit),
+        "min_edge": float(min_edge),
     }
 
 
@@ -179,29 +210,41 @@ def build_review(
     model,
     bankroll: int = 100,
     unit: int = 100,
+    min_edge: float = 0.0,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
     """Build a structured China SP review for CLI and HTML rendering."""
     rows = read_china_sp_csv(input_path)
     matches = [
-        review_match(row, model, bankroll=bankroll, unit=unit, calibrator=calibrator)
+        review_match(
+            row,
+            model,
+            bankroll=bankroll,
+            unit=unit,
+            min_edge=min_edge,
+            calibrator=calibrator,
+        )
         for row in rows
     ]
     settled = [m for m in matches if m["status"] == "settled"]
     pending = [m for m in matches if m["status"] == "pending"]
+    staked_settled = [m for m in settled if m["stake_total"] > 0]
+    profitable = [m for m in staked_settled if float(m["pnl"]) > 0]
     cumulative_pnl = sum(float(m["pnl"]) for m in settled)
-    profitable = [m for m in settled if float(m["pnl"]) > 0]
-    hit_rate = (len(profitable) / len(settled)) if settled else None
+    hit_rate = (len(profitable) / len(staked_settled)) if staked_settled else None
     return {
         "input": str(input_path),
         "bankroll": int(bankroll),
         "unit": int(unit),
+        "min_edge": float(min_edge),
         "matches": matches,
         "summary": {
             "cumulative_pnl": cumulative_pnl,
             "settled_count": len(settled),
             "pending_count": len(pending),
             "match_count": len(matches),
+            "staked_count": len([m for m in matches if m["stake_total"] > 0]),
+            "staked_settled_count": len(staked_settled),
             "profitable_count": len(profitable),
             "hit_rate": hit_rate,
             "stage_count": _stage_count(matches),
@@ -210,28 +253,29 @@ def build_review(
 
 
 def format_console_table(review: Mapping[str, object]) -> str:
-    """Return the Chinese console table required by ``wcforecast china-sp-review``."""
+    """Return a concise Chinese console table for ``wcforecast china-sp-review``."""
     headers = [
+        "赛段",
         "对阵",
         "模型胜/平/负%",
         "体彩SP胜/平/负",
-        "公允赔率胜/平/负",
         "分配胜/平/负",
         "实际",
         "盈亏",
-        "edge提示",
+        "策略",
     ]
     rows = []
     for match in review["matches"]:
         rows.append([
+            match["stage"],
             f"{match['home']} vs {match['away']}",
             _fmt_pct_triplet(match["probabilities"]),
-            _fmt_odds_triplet(match["sp"]),
-            _fmt_odds_triplet(match["fair_odds"]),
+            _fmt_sp_triplet(match["sp"]),
             _fmt_alloc_triplet(match["allocation"]),
             match["actual_label"],
             "待开奖" if match["pnl"] is None else _fmt_console_currency(match["pnl"]),
-            _edge_hint(match["edge"]),
+            match["stake_status"] if match["selected_outcome"] is None
+            else f"{OUTCOME_LABELS[match['selected_outcome']]} {_edge_hint(match['edge'])}",
         ])
 
     widths = [
@@ -243,10 +287,11 @@ def format_console_table(review: Mapping[str, object]) -> str:
     body = ["  ".join(_pad(str(row[i]), widths[i]) for i in range(len(headers))) for row in rows]
     summary = review["summary"]
     footer = (
-        f"合计：已结算 {summary['settled_count']} 场，待开奖 {summary['pending_count']} 场，"
+        f"合计：共 {summary['match_count']} 场，已结算 {summary['settled_count']} 场，"
+        f"待开奖 {summary['pending_count']} 场，已模拟买入 {summary['staked_count']} 场，"
         f"累计收益 {_fmt_console_currency(summary['cumulative_pnl'])}"
     )
-    return "\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer])
+    return _console_safe("\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer]))
 
 
 def render_html(review: Mapping[str, object]) -> str:
@@ -258,7 +303,7 @@ def render_html(review: Mapping[str, object]) -> str:
     hit_rate = summary.get("hit_rate")
     hit_rate_card = "" if hit_rate is None else f"""
       <div class="summary-item">
-        <span>盈利场次率</span>
+        <span>已买入命中率</span>
         <strong>{_fmt_pct(float(hit_rate))}</strong>
       </div>"""
 
@@ -284,6 +329,7 @@ def render_html(review: Mapping[str, object]) -> str:
       --red: #dc2626;
       --red-soft: #fef2f2;
       --amber: #b45309;
+      --amber-soft: #fff7ed;
       --shadow: 0 10px 30px rgba(31, 41, 55, 0.08);
     }}
     * {{ box-sizing: border-box; }}
@@ -336,7 +382,7 @@ def render_html(review: Mapping[str, object]) -> str:
     }}
     .summary {{
       display: grid;
-      grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1.35fr) repeat(4, minmax(0, 1fr));
       gap: 10px;
       margin: 8px 0 24px;
     }}
@@ -364,6 +410,16 @@ def render_html(review: Mapping[str, object]) -> str:
       font-size: 30px;
     }}
     .summary-item.profit.negative strong {{ color: var(--red); }}
+    .diagnosis {{
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border: 1px solid #fed7aa;
+      border-radius: 8px;
+      background: var(--amber-soft);
+      color: #7c2d12;
+      line-height: 1.7;
+      font-size: 13px;
+    }}
     .section-heading {{
       display: flex;
       align-items: baseline;
@@ -404,6 +460,20 @@ def render_html(review: Mapping[str, object]) -> str:
       font-size: 12px;
       margin-bottom: 5px;
     }}
+    .stage {{
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 7px;
+      margin-left: 6px;
+      border-radius: 999px;
+      color: var(--amber);
+      background: var(--amber-soft);
+      border: 1px solid #fed7aa;
+      font-size: 11px;
+      font-weight: 800;
+      vertical-align: middle;
+    }}
     .match-title {{
       margin: 0;
       font-size: 18px;
@@ -426,10 +496,15 @@ def render_html(review: Mapping[str, object]) -> str:
       font-weight: 800;
       white-space: nowrap;
     }}
-    .status.pending {{
+    .status.pending, .status.staked {{
       color: var(--blue);
       background: var(--blue-soft);
       border: 1px solid #c7ddff;
+    }}
+    .status.waiting {{
+      color: var(--amber);
+      background: var(--amber-soft);
+      border: 1px solid #fed7aa;
     }}
     .status.positive {{
       color: var(--green);
@@ -494,20 +569,6 @@ def render_html(review: Mapping[str, object]) -> str:
       font-size: 13px;
       font-weight: 700;
     }}
-    .stage {{
-      display: inline-flex;
-      align-items: center;
-      min-height: 22px;
-      padding: 0 7px;
-      margin-left: 6px;
-      border-radius: 999px;
-      color: var(--amber);
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
-      font-size: 11px;
-      font-weight: 800;
-      vertical-align: middle;
-    }}
     .model-details {{
       margin-top: 12px;
       border-top: 1px solid var(--soft-line);
@@ -568,12 +629,14 @@ def render_html(review: Mapping[str, object]) -> str:
       font-size: 13px;
       line-height: 1.7;
     }}
+    @media (max-width: 860px) {{
+      .summary {{ grid-template-columns: 1fr 1fr; }}
+      .summary-item.profit {{ grid-column: 1 / -1; }}
+    }}
     @media (max-width: 760px) {{
       main {{ width: min(100% - 20px, 980px); }}
       .topbar {{ grid-template-columns: 1fr; }}
       .github-link {{ justify-self: start; }}
-      .summary {{ grid-template-columns: 1fr 1fr; }}
-      .summary-item.profit {{ grid-column: 1 / -1; }}
       .card-grid {{ grid-template-columns: 1fr; }}
     }}
     @media (max-width: 460px) {{
@@ -589,7 +652,7 @@ def render_html(review: Mapping[str, object]) -> str:
     <header class="topbar">
       <div>
         <h1>中国体彩 SP 世界杯预测</h1>
-        <p class="subtitle">基于模型概率 + 用户手动录入中国体彩胜平负 SP 的复盘页面；每场总模拟 100 元，不构成投注建议</p>
+        <p class="subtitle">基于模型概率 + 用户手动录入中国体彩胜平负 SP 的复盘页面；每场最多模拟 100 元，不构成投注建议</p>
       </div>
       <a class="github-link" href="{REPO_URL}">GitHub</a>
     </header>
@@ -599,20 +662,22 @@ def render_html(review: Mapping[str, object]) -> str:
         <span>累计收益</span>
         <strong>{_fmt_signed_currency(summary['cumulative_pnl'])}</strong>
       </div>
-      <div class="summary-item">
-        <span>已结算场次</span>
-        <strong>{summary['settled_count']}</strong>
-      </div>
-      <div class="summary-item">
-        <span>待开奖场次</span>
-        <strong>{summary['pending_count']}</strong>
-      </div>{hit_rate_card}
+      <div class="summary-item"><span>总赛程</span><strong>{summary['match_count']}</strong></div>
+      <div class="summary-item"><span>已结算</span><strong>{summary['settled_count']}</strong></div>
+      <div class="summary-item"><span>待录入/待开奖</span><strong>{summary['pending_count']}</strong></div>
+      <div class="summary-item"><span>已模拟买入</span><strong>{summary['staked_count']}</strong></div>{hit_rate_card}
     </section>
+
+    <div class="diagnosis">
+      亏损诊断：旧页面亏损主要来自 demo SP/赛果不是官方中国体彩数据，以及“没有正 edge 也硬买”的策略偏差。
+      当前版本只在用户录入完整 SP 且最大 edge 高于阈值时模拟买入 100 元；当前阈值为 {_fmt_pct(float(review.get("min_edge", 0.0)))}。
+      否则标记为待录入或观望，避免为了少量样本调参而过拟合。
+    </div>
 
     <section>
       <div class="section-heading">
         <h2>未来预测 {len(pending)}</h2>
-        <span>actual 留空的比赛</span>
+        <span>actual 留空、SP 待录入或比赛未开始</span>
       </div>
       {_render_card_grid(pending, empty_text="暂无待开奖比赛。")}
     </section>
@@ -626,7 +691,9 @@ def render_html(review: Mapping[str, object]) -> str:
     </section>
 
     <footer class="disclaimer">
-      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入。示例 SP 和赛果只是 demo 占位，不代表官方中国体彩数据。每场总模拟金额为 100 元，投向当前模型概率下 edge 最大的一项；这不是自动下注或盈利保证。模型概率不是保证，历史盈亏不能证明长期存在 edge。
+      本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 需用户手动录入；空白 SP 表示待录入。
+      示例或模板行不代表官方中国体彩数据。SP 和市场赔率只用于预测后的比较与复盘，不作为模型输入。
+      模型概率不是保证，历史盈亏不能证明长期存在 edge。
     </footer>
   </main>
 </body>
@@ -647,8 +714,8 @@ def _parse_row(raw: Mapping[str, str], line_no: int) -> dict:
     date = (raw.get("date") or "").strip()
     home = (raw.get("home") or "").strip()
     away = (raw.get("away") or "").strip()
-    if not date or not home or not away:
-        raise ValueError(f"line {line_no}: date, home and away are required")
+    if not date:
+        raise ValueError(f"line {line_no}: date is required")
     return {
         "date": date,
         "stage": (raw.get("stage") or DEFAULT_STAGE).strip() or DEFAULT_STAGE,
@@ -664,18 +731,21 @@ def _parse_row(raw: Mapping[str, str], line_no: int) -> dict:
 
 def _parse_bool(value: object, line_no: int) -> bool:
     v = str(value or "").strip().lower()
-    if v in {"true", "1", "yes", "y"}:
+    if v in {"", "true", "1", "yes", "y"}:
         return True
     if v in {"false", "0", "no", "n"}:
         return False
     raise ValueError(f"line {line_no}: neutral must be true/false")
 
 
-def _parse_sp(value: object, field: str, line_no: int) -> float:
+def _parse_sp(value: object, field: str, line_no: int) -> float | None:
+    v = str(value or "").strip()
+    if not v:
+        return None
     try:
-        sp = float(str(value or "").strip())
+        sp = float(v)
     except ValueError as exc:
-        raise ValueError(f"line {line_no}: {field} must be numeric") from exc
+        raise ValueError(f"line {line_no}: {field} must be numeric or blank") from exc
     if sp <= 1.0:
         raise ValueError(f"line {line_no}: {field} should be greater than 1.0")
     return sp
@@ -688,6 +758,14 @@ def _parse_actual(value: object, line_no: int) -> str | None:
     if actual not in ACTUAL_TO_OUTCOME:
         raise ValueError(f"line {line_no}: actual must be H/D/A or blank")
     return actual
+
+
+def _is_tbd(name: str) -> bool:
+    return name.strip() in TBD_NAMES
+
+
+def _zero_allocation() -> dict[str, int]:
+    return {outcome: 0 for outcome in OUTCOMES}
 
 
 def _stage_count(matches: Sequence[Mapping[str, object]]) -> dict[str, int]:
@@ -711,59 +789,69 @@ def _round_to_unit(value: float, unit: int) -> int:
     return int(ratio.quantize(Decimal("1"), rounding=ROUND_HALF_UP) * unit)
 
 
-def _fmt_pct(value: float) -> str:
-    return f"{value * 100:.1f}%"
+def _fmt_pct(value: float | None) -> str:
+    return "—" if value is None else f"{value * 100:.1f}%"
 
 
-def _fmt_edge(value: float) -> str:
+def _fmt_edge(value: float | None) -> str:
+    if value is None:
+        return "待录入SP"
     sign = "+" if value >= 0 else ""
     return f"{sign}{value * 100:.1f}%"
 
 
-def _fmt_currency(value: float) -> str:
-    return f"¥{int(round(value)):,.0f}"
+def _fmt_currency(value: float | None) -> str:
+    return "—" if value is None else f"¥{int(round(value)):,.0f}"
 
 
-def _fmt_signed_currency(value: float) -> str:
+def _fmt_signed_currency(value: float | None) -> str:
+    if value is None:
+        return "待开奖"
     value = 0.0 if abs(float(value)) < 0.05 else float(value)
     sign = "+" if value >= 0 else "-"
     return f"{sign}¥{abs(value):,.1f}"
 
 
-def _fmt_console_currency(value: float) -> str:
+def _fmt_console_currency(value: float | None) -> str:
+    if value is None:
+        return "待开奖"
     value = 0.0 if abs(float(value)) < 0.05 else float(value)
     sign = "+" if value >= 0 else "-"
     return f"{sign}{abs(value):,.1f} 元"
 
 
-def _fmt_sp(value: float) -> str:
-    return f"@{value:.2f}"
+def _fmt_sp(value: float | None) -> str:
+    return "待录入SP" if value is None else f"@{value:.2f}"
 
 
-def _fmt_odds(value: float) -> str:
-    return f"{value:.2f}"
+def _fmt_odds(value: float | None) -> str:
+    return "—" if value is None else f"{value:.2f}"
 
 
-def _fmt_triplet(values: Mapping[str, float], formatter: Callable[[float], str]) -> str:
-    return "/".join(formatter(float(values[outcome])) for outcome in OUTCOMES)
+def _fmt_triplet(values: Mapping[str, float | None] | None, formatter: Callable[[float | None], str]) -> str:
+    if values is None:
+        return "—/—/—"
+    return "/".join(formatter(values[outcome]) for outcome in OUTCOMES)
 
 
-def _fmt_pct_triplet(values: Mapping[str, float]) -> str:
+def _fmt_pct_triplet(values: Mapping[str, float] | None) -> str:
     return _fmt_triplet(values, _fmt_pct)
 
 
-def _fmt_odds_triplet(values: Mapping[str, float]) -> str:
-    return _fmt_triplet(values, _fmt_odds)
+def _fmt_sp_triplet(values: Mapping[str, float | None]) -> str:
+    return _fmt_triplet(values, _fmt_sp)
 
 
 def _fmt_alloc_triplet(values: Mapping[str, int]) -> str:
     return "/".join(f"{int(values[outcome]):,}" for outcome in OUTCOMES)
 
 
-def _edge_hint(edge: Mapping[str, float]) -> str:
-    best = max(OUTCOMES, key=lambda outcome: edge[outcome])
+def _edge_hint(edge: Mapping[str, float | None]) -> str:
+    if any(edge[outcome] is None for outcome in OUTCOMES):
+        return "待录入SP"
+    best = max(OUTCOMES, key=lambda outcome: float(edge[outcome]))
     label = OUTCOME_LABELS[best]
-    if edge[best] > 0:
+    if float(edge[best]) > 0:
         return f"正 edge：{label} {_fmt_edge(edge[best])}"
     return f"无正 edge，最佳 {label} {_fmt_edge(edge[best])}"
 
@@ -795,6 +883,11 @@ def _html_escape(value: object) -> str:
     return html.escape(str(value), quote=True)
 
 
+def _console_safe(value: str) -> str:
+    encoding = sys.stdout.encoding or "utf-8"
+    return value.encode(encoding, errors="replace").decode(encoding)
+
+
 def _render_card_grid(matches: Iterable[Mapping[str, object]], empty_text: str) -> str:
     matches = list(matches)
     if not matches:
@@ -805,7 +898,14 @@ def _render_card_grid(matches: Iterable[Mapping[str, object]], empty_text: str) 
 
 def _render_card(match: Mapping[str, object]) -> str:
     if match["status"] == "pending":
-        status = '<span class="status pending">待开奖</span>'
+        if match["unresolved"]:
+            status = '<span class="status waiting">对阵待定</span>'
+        elif match["stake_status"] == "待录入SP":
+            status = '<span class="status waiting">待录入SP</span>'
+        elif match["stake_total"] > 0:
+            status = '<span class="status staked">待开奖</span>'
+        else:
+            status = '<span class="status waiting">观望</span>'
     else:
         pnl = float(match["pnl"])
         status = (
@@ -839,10 +939,11 @@ def _render_bet_column(match: Mapping[str, object], outcome: str) -> str:
     if match["actual_outcome"] == outcome:
         classes.append("hit")
     class_attr = "" if not classes else " " + " ".join(classes)
+    amount = _fmt_currency(match["allocation"][outcome])
     return f"""
             <div class="bet-column{class_attr}">
               <div class="bet-label"><span class="marker">{OUTCOME_MARKERS[outcome]}</span>{BET_LABELS[outcome]}</div>
-              <div class="amount">{_fmt_currency(match["allocation"][outcome])}</div>
+              <div class="amount">{amount}</div>
               <div class="sp">{_fmt_sp(match["sp"][outcome])}</div>
             </div>"""
 
@@ -855,20 +956,21 @@ def _render_model_details(match: Mapping[str, object]) -> str:
               {_render_detail_row("模型概率", match["probabilities"], _fmt_pct)}
               {_render_detail_row("公允赔率", match["fair_odds"], _fmt_odds)}
               {_render_detail_row("Edge", match["edge"], _fmt_edge, signed=True)}
+              <div class="detail-row"><div class="detail-label">策略</div><div class="detail-value" style="grid-column: span 3; text-align:left;">{_html_escape(match["stake_status"])}</div></div>
             </div>
           </details>"""
 
 
 def _render_detail_row(
     label: str,
-    values: Mapping[str, float],
-    formatter: Callable[[float], str],
+    values: Mapping[str, float | None] | None,
+    formatter: Callable[[float | None], str],
     signed: bool = False,
 ) -> str:
     cells = []
     for outcome in OUTCOMES:
-        value = float(values[outcome])
-        cls = f" {_value_class(value)}" if signed else ""
+        value = None if values is None else values[outcome]
+        cls = f" {_value_class(value)}" if signed and value is not None else ""
         cells.append(
             f'<div class="detail-value{cls}"><b>{OUTCOME_LABELS[outcome]}</b>{formatter(value)}</div>'
         )
