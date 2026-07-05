@@ -3,7 +3,7 @@
 [Live Demo / 实时网页](https://greenhand011.github.io/worldcup-forecast-china-sp/) |
 [Source / 源码](https://github.com/greenhand011/worldcup-forecast-china-sp)
 
-![China SP review preview](docs/assets/china-sp-review-preview.svg)
+![中国体彩 SP 世界杯复盘封面](docs/assets/cover-fans.png)
 
 ## 项目简介 / Overview
 
