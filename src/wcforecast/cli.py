@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 
-
 from . import china_sp, china_sp_fetch, data, markets, predict
 from . import model as model_mod
 from . import ratings, simulate
@@ -33,14 +32,11 @@ def _build_2026_model(refit: bool = False):
 def cmd_forecast(args):
     m, s = _build_2026_model(args.refit)
     main = simulate.champion_probabilities(m, s, n_sims=args.sims)
-
-    # Independent structural ("Klement") line: strengths from the prior only.
     post = m.idata.posterior
     ka, kd = float(post["ka"].mean()), float(post["kd"].mean())
     mu, ha = float(post["mu"].mean()), float(post["home_adv"].mean())
     ind = simulate.monte_carlo(ka * s, kd * s, mu, ha, s, n_sims=args.sims, seed=11)
     ind_map = dict(zip(ind["team"], ind["champion"]))
-
     print(f"\n2026 World Cup — champion probability (Monte Carlo, {args.sims:,} sims)\n")
     print(f"  {'team':24}{'accuracy %':>12}{'independent %':>15}")
     print("  " + "-" * 51)
@@ -93,6 +89,9 @@ def cmd_china_sp_review(args):
         bankroll=args.bankroll,
         unit=args.unit,
         min_edge=args.min_edge,
+        strategy=args.strategy,
+        kelly_fraction=args.kelly_fraction,
+        max_stake_fraction=args.max_stake_fraction,
     )
     output = china_sp.write_html(review, args.output)
     print()
@@ -158,8 +157,14 @@ def main(argv=None):
     c.add_argument("--output", default="docs/china-sp-review.html")
     c.add_argument("--bankroll", type=int, default=100)
     c.add_argument("--unit", type=int, default=1)
-    c.add_argument("--min-edge", type=float, default=0.03,
-                   help="legacy display option; review staking is split by model probability")
+    c.add_argument("--strategy", choices=sorted(china_sp.STRATEGIES), default="edge-flat",
+                   help="review staking layer: edge-flat(default), prob-split, or kelly")
+    c.add_argument("--min-edge", type=float, default=0.05,
+                   help="minimum positive edge required to simulate a stake")
+    c.add_argument("--kelly-fraction", type=float, default=0.25,
+                   help="fractional Kelly multiplier used only with --strategy kelly")
+    c.add_argument("--max-stake-fraction", type=float, default=1.0,
+                   help="cap Kelly stake as a fraction of bankroll")
     c.set_defaults(func=cmd_china_sp_review)
 
     fetch = sub.add_parser("china-sp-fetch", help="fetch public China SP rows into the review CSV")

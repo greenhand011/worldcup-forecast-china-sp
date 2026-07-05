@@ -1,8 +1,7 @@
-"""Manual China Sports Lottery SP review helpers.
+"""China Sports Lottery SP review helpers.
 
-China Sports Lottery SP values are user-entered review data only. They are
-applied after the project's market-independent calibrated model probabilities
-and are never used as model inputs.
+SP values are post-prediction review data only. They are never used as model inputs.
+The default staking layer is value/edge based: no positive edge means no simulated stake.
 """
 from __future__ import annotations
 
@@ -31,6 +30,8 @@ ACTUAL_LABELS = {"H": "主胜", "D": "平局", "A": "客胜", None: "待开奖"}
 DEFAULT_STAGE = "未标注赛段"
 TBD_NAMES = {"", "TBD", "待定", "待定球队", "未定", "To be decided"}
 REPO_URL = "https://github.com/greenhand011/worldcup-forecast-china-sp"
+STRATEGIES = {"edge-flat", "prob-split", "kelly"}
+
 TEAM_ZH = {
     "Algeria": "阿尔及利亚",
     "Argentina": "阿根廷",
@@ -85,10 +86,9 @@ TEAM_ZH = {
 
 
 def read_china_sp_csv(path: str | Path) -> list[dict]:
-    """Read the manual China Sports Lottery SP CSV into typed match rows.
+    """Read the China SP review CSV into typed rows.
 
-    Lines starting with ``#`` are ignored so the committed template can explain
-    that SP values must be manually replaced with real China Sports Lottery data.
+    Lines starting with ``#`` are ignored so the committed CSV can keep human notes.
     """
     path = Path(path)
     if not path.exists():
@@ -118,11 +118,7 @@ def allocate_bankroll(
     bankroll: int = 100,
     unit: int = 1,
 ) -> dict[str, int]:
-    """Allocate ``bankroll`` across H/D/A by probability, rounded to ``unit``.
-
-    The China SP page uses this as its default review staking rule: every
-    match has the same total simulated bankroll, split by model probability.
-    """
+    """Legacy probability split: allocate the full bankroll by model probability."""
     bankroll = int(bankroll)
     unit = int(unit)
     if bankroll <= 0:
@@ -145,14 +141,19 @@ def allocate_bankroll(
 def allocate_best_edge(
     edge: Mapping[str, float | None],
     bankroll: int = 100,
-    unit: int = 100,
-    min_edge: float = 0.0,
+    unit: int = 1,
+    min_edge: float = 0.05,
+    probabilities: Mapping[str, float] | None = None,
+    require_model_favorite: bool = True,
+    min_probability: float = 0.40,
 ) -> tuple[dict[str, int], str | None, str]:
-    """Put one flat review stake on the largest positive edge.
+    """Conservative flat value strategy.
 
-    This is a review-only stake selection layer. SP values still do not enter the
-    model; they are used after prediction to decide whether a single 100-yuan
-    review stake has positive expected value for that manually entered SP snapshot.
+    The market/SP layer is noisy on tiny samples. To avoid chasing long-shot
+    edges created by model-market disagreement, the default value strategy only
+    bets when the best-edge side is also the model's top probability side and
+    its probability is high enough. This changes the review layer only; SP still
+    never enters the model.
     """
     bankroll = int(bankroll)
     unit = int(unit)
@@ -160,16 +161,90 @@ def allocate_best_edge(
         raise ValueError("bankroll must be positive")
     if unit <= 0:
         raise ValueError("unit must be positive")
-    if bankroll < unit or bankroll % unit != 0:
-        raise ValueError("bankroll must be a positive multiple of unit")
+    if bankroll < unit:
+        raise ValueError("bankroll must be at least one unit")
 
-    if any(edge[outcome] is None for outcome in OUTCOMES):
+    if any(edge.get(outcome) is None for outcome in OUTCOMES):
         return _zero_allocation(), None, "待录入SP"
 
     best = max(OUTCOMES, key=lambda outcome: float(edge[outcome]))
-    if float(edge[best]) <= float(min_edge):
-        return _zero_allocation(), None, "edge未过阈值，观望"
-    return {outcome: bankroll if outcome == best else 0 for outcome in OUTCOMES}, best, "模拟买入"
+    best_edge = float(edge[best])
+    if best_edge <= float(min_edge):
+        return _zero_allocation(), None, f"无正edge，观望（最佳 {OUTCOME_LABELS[best]} {_fmt_edge(best_edge)}）"
+
+    if probabilities is not None:
+        model_favorite = max(OUTCOMES, key=lambda outcome: float(probabilities[outcome]))
+        best_probability = float(probabilities[best])
+        if require_model_favorite and best != model_favorite:
+            return _zero_allocation(), None, (
+                f"观望：最佳edge为{OUTCOME_LABELS[best]} {_fmt_edge(best_edge)}，"
+                f"但模型第一选择是{OUTCOME_LABELS[model_favorite]}"
+            )
+        if best_probability < float(min_probability):
+            return _zero_allocation(), None, (
+                f"观望：{OUTCOME_LABELS[best]} edge {_fmt_edge(best_edge)}，"
+                f"但模型概率仅 {_fmt_pct(best_probability)}，低于稳健阈值 {_fmt_pct(min_probability)}"
+            )
+
+    stake = _round_to_unit(bankroll, unit)
+    stake = min(stake, bankroll)
+    if stake <= 0:
+        return _zero_allocation(), None, "edge过阈值但下注额低于最小单位，观望"
+    return {outcome: stake if outcome == best else 0 for outcome in OUTCOMES}, best, (
+        f"edge-flat：买入{OUTCOME_LABELS[best]}，edge {_fmt_edge(best_edge)}"
+    )
+
+
+def allocate_fractional_kelly(
+    probabilities: Mapping[str, float],
+    sp: Mapping[str, float | None],
+    bankroll: int = 100,
+    unit: int = 1,
+    min_edge: float = 0.05,
+    kelly_fraction: float = 0.25,
+    max_stake_fraction: float = 1.0,
+) -> tuple[dict[str, int], str | None, str]:
+    """Fractional Kelly on the best positive-edge outcome only."""
+    bankroll = int(bankroll)
+    unit = int(unit)
+    if bankroll <= 0:
+        raise ValueError("bankroll must be positive")
+    if unit <= 0:
+        raise ValueError("unit must be positive")
+    if kelly_fraction <= 0:
+        raise ValueError("kelly_fraction must be positive")
+    if max_stake_fraction <= 0:
+        raise ValueError("max_stake_fraction must be positive")
+    if any(sp.get(outcome) is None for outcome in OUTCOMES):
+        return _zero_allocation(), None, "待录入SP"
+
+    candidates = []
+    for outcome in OUTCOMES:
+        probability = float(probabilities[outcome])
+        odds = float(sp[outcome])
+        edge = probability * odds - 1.0
+        b = odds - 1.0
+        if b <= 0 or edge <= float(min_edge):
+            continue
+        full_kelly = edge / b
+        if full_kelly <= 0:
+            continue
+        candidates.append((edge, outcome, full_kelly))
+
+    if not candidates:
+        best = max(OUTCOMES, key=lambda outcome: float(probabilities[outcome]) * float(sp[outcome]) - 1.0)
+        best_edge = float(probabilities[best]) * float(sp[best]) - 1.0
+        return _zero_allocation(), None, f"无正edge，观望（最佳 {OUTCOME_LABELS[best]} {_fmt_edge(best_edge)}）"
+
+    edge, best, full_kelly = max(candidates, key=lambda item: item[0])
+    raw_stake = bankroll * min(max_stake_fraction, kelly_fraction * full_kelly)
+    stake = _round_to_unit(raw_stake, unit)
+    stake = max(0, min(stake, bankroll))
+    if stake <= 0:
+        return _zero_allocation(), None, "Kelly下注额低于最小单位，观望"
+    return {outcome: stake if outcome == best else 0 for outcome in OUTCOMES}, best, (
+        f"kelly {kelly_fraction:g}x：买入{OUTCOME_LABELS[best]}，edge {_fmt_edge(edge)}，full Kelly {full_kelly * 100:.1f}%"
+    )
 
 
 def review_match(
@@ -177,10 +252,17 @@ def review_match(
     model,
     bankroll: int = 100,
     unit: int = 1,
-    min_edge: float = 0.0,
+    min_edge: float = 0.05,
+    strategy: str = "edge-flat",
+    kelly_fraction: float = 0.25,
+    max_stake_fraction: float = 1.0,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
-    """Review one manually-entered SP row against calibrated model probabilities."""
+    """Review one SP row against calibrated model probabilities and a staking strategy."""
+    strategy = str(strategy or "edge-flat")
+    if strategy not in STRATEGIES:
+        raise ValueError(f"unknown strategy: {strategy}")
+
     home = str(row["home"]).strip()
     away = str(row["away"]).strip()
     unresolved = _is_tbd(home) or _is_tbd(away)
@@ -188,11 +270,7 @@ def review_match(
         raise ValueError(f"unknown team(s): {home} vs {away}")
 
     neutral = bool(row["neutral"])
-    sp = {
-        "home": row.get("sp_home"),
-        "draw": row.get("sp_draw"),
-        "away": row.get("sp_away"),
-    }
+    sp = {"home": row.get("sp_home"), "draw": row.get("sp_draw"), "away": row.get("sp_away")}
     sp_entered_count = sum(value is not None for value in sp.values())
     has_any_sp = sp_entered_count > 0
     has_complete_sp = sp_entered_count == len(OUTCOMES)
@@ -216,9 +294,28 @@ def review_match(
             for outcome in OUTCOMES
         }
         if has_complete_sp:
-            allocation = allocate_bankroll(probabilities, bankroll=bankroll, unit=unit)
-            selected_outcome = max(OUTCOMES, key=lambda outcome: allocation[outcome])
-            stake_status = "按模型概率分配"
+            if strategy == "prob-split":
+                allocation = allocate_bankroll(probabilities, bankroll=bankroll, unit=unit)
+                selected_outcome = max(OUTCOMES, key=lambda outcome: allocation[outcome])
+                stake_status = "概率拆分复盘（非推荐下注策略）"
+            elif strategy == "kelly":
+                allocation, selected_outcome, stake_status = allocate_fractional_kelly(
+                    probabilities,
+                    sp,
+                    bankroll=bankroll,
+                    unit=unit,
+                    min_edge=min_edge,
+                    kelly_fraction=kelly_fraction,
+                    max_stake_fraction=max_stake_fraction,
+                )
+            else:
+                allocation, selected_outcome, stake_status = allocate_best_edge(
+                    edge,
+                    bankroll=bankroll,
+                    unit=unit,
+                    min_edge=min_edge,
+                    probabilities=probabilities,
+                )
         else:
             allocation = _zero_allocation()
             selected_outcome = None
@@ -233,7 +330,7 @@ def review_match(
     if actual:
         actual_outcome = ACTUAL_TO_OUTCOME[actual]
         actual_sp = sp[actual_outcome]
-        pnl = (allocation[actual_outcome] * float(actual_sp) - stake_total) if stake_total else 0.0
+        pnl = (allocation[actual_outcome] * float(actual_sp) - stake_total) if stake_total and actual_sp is not None else 0.0
         status = "settled"
     else:
         actual_outcome = None
@@ -260,6 +357,7 @@ def review_match(
         "selected_outcome": selected_outcome,
         "stake_total": stake_total,
         "stake_status": stake_status,
+        "strategy": strategy,
         "actual": actual,
         "actual_outcome": actual_outcome,
         "actual_label": ACTUAL_LABELS[actual],
@@ -268,6 +366,8 @@ def review_match(
         "bankroll": int(bankroll),
         "unit": int(unit),
         "min_edge": float(min_edge),
+        "kelly_fraction": float(kelly_fraction),
+        "max_stake_fraction": float(max_stake_fraction),
     }
 
 
@@ -276,7 +376,10 @@ def build_review(
     model,
     bankroll: int = 100,
     unit: int = 1,
-    min_edge: float = 0.0,
+    min_edge: float = 0.05,
+    strategy: str = "edge-flat",
+    kelly_fraction: float = 0.25,
+    max_stake_fraction: float = 1.0,
     today: str | date | None = None,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
@@ -290,6 +393,9 @@ def build_review(
             bankroll=bankroll,
             unit=unit,
             min_edge=min_edge,
+            strategy=strategy,
+            kelly_fraction=kelly_fraction,
+            max_stake_fraction=max_stake_fraction,
             calibrator=calibrator,
         )
         for row in rows
@@ -303,11 +409,11 @@ def build_review(
         m for m in raw_pending
         if m not in today_pending and m not in awaiting_result and m not in future_pending
     ]
-    staked_settled = [m for m in settled if m["stake_total"] > 0]
+    staked_settled = [m for m in settled if int(m["stake_total"]) > 0]
     profitable = [m for m in staked_settled if float(m["pnl"]) > 0]
-    cumulative_pnl = sum(float(m["pnl"]) for m in settled)
-    hit_rate = (len(profitable) / len(staked_settled)) if staked_settled else None
+    cumulative_pnl = sum(float(m["pnl"] or 0.0) for m in settled)
     history_stake_total = sum(float(m["stake_total"]) for m in staked_settled)
+    hit_rate = (len(profitable) / len(staked_settled)) if staked_settled else None
     roi = (cumulative_pnl / history_stake_total) if history_stake_total else None
     today_stake_total = sum(int(m["stake_total"]) for m in today_pending)
     for match in matches:
@@ -319,6 +425,9 @@ def build_review(
         "bankroll": int(bankroll),
         "unit": int(unit),
         "min_edge": float(min_edge),
+        "strategy": strategy,
+        "kelly_fraction": float(kelly_fraction),
+        "max_stake_fraction": float(max_stake_fraction),
         "matches": matches,
         "today_pending": today_pending,
         "display_pending": today_pending,
@@ -337,28 +446,19 @@ def build_review(
             "raw_pending_count": len(raw_pending),
             "template_count": len(template_pending),
             "match_count": len(matches),
-            "staked_count": len([m for m in matches if m["stake_total"] > 0]),
+            "staked_count": len([m for m in matches if int(m["stake_total"]) > 0]),
             "staked_settled_count": len(staked_settled),
             "profitable_count": len(profitable),
             "hit_rate": hit_rate,
             "roi": roi,
+            "history_stake_total": history_stake_total,
             "stage_count": _stage_count(matches),
         },
     }
 
 
 def format_console_table(review: Mapping[str, object]) -> str:
-    """Return a concise Chinese console table for ``wcforecast china-sp-review``."""
-    headers = [
-        "赛段",
-        "对阵",
-        "模型胜/平/负%",
-        "体彩SP胜/平/负",
-        "分配胜/平/负",
-        "实际",
-        "盈亏",
-        "策略",
-    ]
+    headers = ["赛段", "对阵", "模型胜/平/负%", "体彩SP胜/平/负", "分配胜/平/负", "实际", "盈亏", "策略"]
     rows = []
     for match in _main_display_matches(review):
         rows.append([
@@ -371,27 +471,24 @@ def format_console_table(review: Mapping[str, object]) -> str:
             "待开奖" if match["pnl"] is None else _fmt_console_currency(match["pnl"]),
             match["stake_status"],
         ])
-
-    widths = [
-        max(_display_width(str(row[i])) for row in ([headers] + rows))
-        for i in range(len(headers))
-    ]
+    widths = [max(_display_width(str(row[i])) for row in ([headers] + rows)) for i in range(len(headers))]
     line = "  ".join(_pad(headers[i], widths[i]) for i in range(len(headers)))
     sep = "  ".join("-" * widths[i] for i in range(len(headers)))
     body = ["  ".join(_pad(str(row[i]), widths[i]) for i in range(len(headers))) for row in rows]
     summary = review["summary"]
     footer = (
-        f"合计：今日预测 {summary.get('today_pending_count', summary.get('pending_count', 0))} 场，"
-        f"今日模拟投入 {_fmt_console_currency(summary.get('today_stake_total', 0))}，"
+        f"合计：策略 {review.get('strategy', 'edge-flat')}，"
+        f"今日预测 {summary.get('today_pending_count', 0)} 场，"
+        f"今日实际下注 {_fmt_console_currency(summary.get('today_stake_total', 0))}，"
+        f"已下注结算 {summary.get('staked_settled_count', 0)}/{summary.get('settled_count', 0)}，"
         f"完赛待补赛果 {summary.get('awaiting_result_count', 0)} 场，"
-        f"已结算复盘 {summary['settled_count']} 场，未来赛程 {summary.get('future_count', 0)} 场，"
-        f"累计收益 {_fmt_console_currency(summary['cumulative_pnl'])}"
+        f"未来赛程 {summary.get('future_count', 0)} 场，"
+        f"累计盈亏 {_fmt_console_currency(summary['cumulative_pnl'])}"
     )
     return _console_safe("\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer]))
 
 
 def render_html(review: Mapping[str, object]) -> str:
-    """Render the review as a self-contained static HTML document."""
     matches = list(review["matches"])
     today_pending = list(review.get("today_pending") or review.get("display_pending") or [])
     awaiting_result = list(review.get("awaiting_result") or [])
@@ -402,12 +499,15 @@ def render_html(review: Mapping[str, object]) -> str:
     hit_rate = summary.get("hit_rate")
     roi = summary.get("roi")
     history_stats = []
+    history_stats.append(f"已下注结算 {summary.get('staked_settled_count', 0)} / 已结算 {summary.get('settled_count', 0)}")
     if hit_rate is not None:
-        history_stats.append(f"盈利场次率 {_fmt_pct(float(hit_rate))}")
+        history_stats.append(f"盈利下注率 {_fmt_pct(float(hit_rate))}")
     if roi is not None:
         history_stats.append(f"ROI {_fmt_pct(float(roi))}")
     history_stats.append(f"累计盈亏 {_fmt_signed_currency(summary['cumulative_pnl'])}")
     history_subtitle = "；".join(history_stats)
+    pnl_class = "positive" if float(summary["cumulative_pnl"]) >= 0 else "negative"
+    roi_text = "ROI —" if roi is None else f"ROI {_fmt_pct(float(roi))}"
 
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -416,381 +516,38 @@ def render_html(review: Mapping[str, object]) -> str:
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>中国体彩 SP 世界杯预测</title>
   <style>
-    :root {{
-      color-scheme: light;
-      --bg: #f6f8fb;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --line: #d9e0e8;
-      --soft-line: #edf1f5;
-      --blue: #2563eb;
-      --blue-soft: #eff6ff;
-      --green: #159957;
-      --green-soft: #eaf8f0;
-      --red: #dc2626;
-      --red-soft: #fef2f2;
-      --amber: #b45309;
-      --amber-soft: #fff7ed;
-      --shadow: 0 10px 30px rgba(31, 41, 55, 0.08);
-    }}
+    :root {{ color-scheme: light; --bg:#f6f8fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#d9e0e8; --soft-line:#edf1f5; --blue:#2563eb; --blue-soft:#eff6ff; --green:#159957; --green-soft:#eaf8f0; --red:#dc2626; --red-soft:#fef2f2; --amber:#b45309; --amber-soft:#fff7ed; --shadow:0 10px 30px rgba(31,41,55,.08); }}
     * {{ box-sizing: border-box; }}
-    body {{
-      margin: 0;
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-      letter-spacing: 0;
-    }}
-    main {{
-      width: min(980px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 22px 0 44px;
-    }}
-    .topbar {{
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 16px;
-      align-items: center;
-      padding: 14px 0 16px;
-    }}
-    h1 {{
-      margin: 0 0 6px;
-      font-size: clamp(24px, 3.4vw, 34px);
-      line-height: 1.16;
-      letter-spacing: 0;
-    }}
-    .subtitle {{
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.6;
-    }}
-    .github-link {{
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 40px;
-      padding: 0 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: var(--text);
-      background: var(--card);
-      text-decoration: none;
-      font-weight: 700;
-      box-shadow: 0 2px 10px rgba(31, 41, 55, 0.05);
-      white-space: nowrap;
-    }}
-    .summary {{
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) repeat(5, minmax(0, 1fr));
-      gap: 10px;
-      margin: 8px 0 24px;
-    }}
-    .summary-item {{
-      min-height: 76px;
-      padding: 13px 15px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--card);
-      box-shadow: var(--shadow);
-    }}
-    .summary-item span {{
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 7px;
-    }}
-    .summary-item strong {{
-      display: block;
-      font-size: 24px;
-      line-height: 1.1;
-    }}
-    .summary-item.profit strong {{
-      color: var(--green);
-      font-size: 30px;
-    }}
-    .summary-item.profit.negative strong {{ color: var(--red); }}
-    .diagnosis {{
-      margin: 0 0 18px;
-      padding: 12px 14px;
-      border: 1px solid #fed7aa;
-      border-radius: 8px;
-      background: var(--amber-soft);
-      color: #7c2d12;
-      line-height: 1.7;
-      font-size: 13px;
-    }}
-    .section-heading {{
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 10px;
-      margin: 24px 0 12px;
-    }}
-    .section-heading h2 {{
-      margin: 0;
-      font-size: 20px;
-      letter-spacing: 0;
-    }}
-    .section-heading span {{
-      color: var(--muted);
-      font-size: 13px;
-    }}
-    .card-grid {{
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }}
-    .match-card {{
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--card);
-      box-shadow: var(--shadow);
-      padding: 14px;
-    }}
-    .match-head {{
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: start;
-      margin-bottom: 12px;
-    }}
-    .date {{
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 5px;
-    }}
-    .stage {{
-      display: inline-flex;
-      align-items: center;
-      min-height: 22px;
-      padding: 0 7px;
-      margin-left: 6px;
-      border-radius: 999px;
-      color: var(--amber);
-      background: var(--amber-soft);
-      border: 1px solid #fed7aa;
-      font-size: 11px;
-      font-weight: 800;
-      vertical-align: middle;
-    }}
-    .match-title {{
-      margin: 0;
-      font-size: 18px;
-      line-height: 1.25;
-      overflow-wrap: anywhere;
-    }}
-    .match-title span {{
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 500;
-      margin: 0 6px;
-    }}
-    .status {{
-      display: inline-flex;
-      align-items: center;
-      min-height: 28px;
-      padding: 0 9px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
-    }}
-    .status.pending, .status.staked {{
-      color: var(--blue);
-      background: var(--blue-soft);
-      border: 1px solid #c7ddff;
-    }}
-    .status.waiting {{
-      color: var(--amber);
-      background: var(--amber-soft);
-      border: 1px solid #fed7aa;
-    }}
-    .status.positive {{
-      color: var(--green);
-      background: var(--green-soft);
-      border: 1px solid #bfe8ce;
-    }}
-    .status.negative {{
-      color: var(--red);
-      background: var(--red-soft);
-      border: 1px solid #fecaca;
-    }}
-    .bet-grid {{
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-    }}
-    .bet-column {{
-      min-width: 0;
-      padding: 10px 9px;
-      border: 1px solid var(--soft-line);
-      border-radius: 8px;
-      background: #fbfcfe;
-    }}
-    .bet-column.selected {{
-      background: var(--blue-soft);
-      border-color: #bfdbfe;
-    }}
-    .bet-column.hit {{
-      background: var(--green-soft);
-      border-color: #bfe8ce;
-    }}
-    .bet-label {{
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.2;
-      margin-bottom: 6px;
-    }}
-    .bet-team {{
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 800;
-      line-height: 1.2;
-      min-height: 16px;
-      margin-bottom: 6px;
-      overflow-wrap: anywhere;
-    }}
-    .marker {{
-      display: inline-grid;
-      place-items: center;
-      flex: 0 0 22px;
-      width: 22px;
-      height: 22px;
-      border-radius: 999px;
-      color: #ffffff;
-      background: var(--blue);
-      font-size: 12px;
-      font-weight: 900;
-    }}
-    .amount {{
-      font-size: 18px;
-      line-height: 1.1;
-      font-weight: 850;
-      white-space: nowrap;
-    }}
-    .sp {{
-      margin-top: 5px;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-    }}
-    .model-details {{
-      margin-top: 12px;
-      border-top: 1px solid var(--soft-line);
-      padding-top: 10px;
-    }}
-    .model-details summary {{
-      cursor: pointer;
-      color: var(--blue);
-      font-size: 13px;
-      font-weight: 800;
-      list-style-position: inside;
-    }}
-    .detail-grid {{
-      display: grid;
-      gap: 8px;
-      margin-top: 10px;
-    }}
-    .detail-row {{
-      display: grid;
-      grid-template-columns: 78px repeat(3, minmax(0, 1fr));
-      gap: 6px;
-      align-items: center;
-      font-size: 12px;
-    }}
-    .detail-label {{
-      color: var(--muted);
-      font-weight: 700;
-    }}
-    .detail-value {{
-      padding: 6px;
-      border-radius: 6px;
-      background: #f8fafc;
-      text-align: right;
-      white-space: nowrap;
-    }}
-    .detail-value b {{
-      display: block;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 700;
-      text-align: left;
-      margin-bottom: 2px;
-    }}
-    .positive {{ color: var(--green); }}
-    .negative {{ color: var(--red); }}
-    .empty {{
-      padding: 20px;
-      border: 1px dashed var(--line);
-      border-radius: 8px;
-      color: var(--muted);
-      background: rgba(255, 255, 255, 0.65);
-    }}
-    .template-box {{
-      border: 1px dashed var(--line);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.75);
-      padding: 12px 14px;
-    }}
-    .template-box summary {{
-      cursor: pointer;
-      color: var(--blue);
-      font-size: 13px;
-      font-weight: 800;
-    }}
-    .template-list {{
-      margin-top: 10px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-    }}
-    .template-row {{
-      padding: 9px 10px;
-      border: 1px solid var(--soft-line);
-      border-radius: 8px;
-      background: #ffffff;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-    }}
-    .template-row strong {{
-      display: block;
-      color: var(--text);
-      font-size: 13px;
-      margin-top: 2px;
-      overflow-wrap: anywhere;
-    }}
-    .disclaimer {{
-      margin-top: 28px;
-      padding-top: 16px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.7;
-    }}
-    @media (max-width: 860px) {{
-      .summary {{ grid-template-columns: 1fr 1fr; }}
-      .summary-item.profit {{ grid-column: 1 / -1; }}
-    }}
-    @media (max-width: 760px) {{
-      main {{ width: min(100% - 20px, 980px); }}
-      .topbar {{ grid-template-columns: 1fr; }}
-      .github-link {{ justify-self: start; }}
-      .card-grid {{ grid-template-columns: 1fr; }}
-      .template-list {{ grid-template-columns: 1fr; }}
-    }}
-    @media (max-width: 460px) {{
-      .summary {{ grid-template-columns: 1fr; }}
-      .bet-grid {{ grid-template-columns: 1fr; }}
-      .detail-row {{ grid-template-columns: 1fr; }}
-      .detail-value {{ text-align: left; }}
-    }}
+    body {{ margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; }}
+    main {{ width:min(980px, calc(100% - 28px)); margin:0 auto; padding:22px 0 44px; }}
+    .topbar {{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px; align-items:center; padding:14px 0 16px; }}
+    h1 {{ margin:0 0 6px; font-size:clamp(24px,3.4vw,34px); line-height:1.16; }}
+    .subtitle {{ margin:0; color:var(--muted); font-size:14px; line-height:1.6; }}
+    .github-link {{ display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:0 14px; border:1px solid var(--line); border-radius:8px; color:var(--text); background:var(--card); text-decoration:none; font-weight:700; box-shadow:0 2px 10px rgba(31,41,55,.05); white-space:nowrap; }}
+    .summary {{ display:grid; grid-template-columns:minmax(220px,1.8fr) repeat(5,minmax(0,1fr)); gap:10px; margin:8px 0 24px; }}
+    .summary-item {{ min-height:76px; padding:13px 15px; border:1px solid var(--line); border-radius:8px; background:var(--card); box-shadow:var(--shadow); }}
+    .summary-item span {{ display:block; color:var(--muted); font-size:12px; margin-bottom:7px; }}
+    .summary-item strong {{ display:block; font-size:24px; line-height:1.1; }}
+    .summary-item.pnl strong {{ font-size:32px; }} .summary-item.pnl.negative strong {{ color:var(--red); }} .summary-item.pnl.positive strong {{ color:var(--green); }}
+    .summary-note {{ margin-top:8px; color:var(--muted); font-size:12px; line-height:1.45; }}
+    .diagnosis {{ margin:0 0 18px; padding:12px 14px; border:1px solid #fed7aa; border-radius:8px; background:var(--amber-soft); color:#7c2d12; line-height:1.7; font-size:13px; }}
+    .section-heading {{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:24px 0 12px; }}
+    .section-heading h2 {{ margin:0; font-size:20px; }} .section-heading span {{ color:var(--muted); font-size:13px; }}
+    .card-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }}
+    .match-card {{ border:1px solid var(--line); border-radius:8px; background:var(--card); box-shadow:var(--shadow); padding:14px; }}
+    .match-head {{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:start; margin-bottom:12px; }}
+    .date {{ color:var(--muted); font-size:12px; margin-bottom:5px; }}
+    .stage {{ display:inline-flex; align-items:center; min-height:22px; padding:0 7px; margin-left:6px; border-radius:999px; color:var(--amber); background:var(--amber-soft); border:1px solid #fed7aa; font-size:11px; font-weight:800; }}
+    .match-title {{ margin:0; font-size:18px; line-height:1.25; overflow-wrap:anywhere; }}
+    .status {{ display:inline-flex; align-items:center; min-height:28px; padding:0 9px; border-radius:999px; font-size:12px; font-weight:800; white-space:nowrap; }}
+    .status.staked {{ color:var(--blue); background:var(--blue-soft); border:1px solid #c7ddff; }} .status.waiting {{ color:var(--amber); background:var(--amber-soft); border:1px solid #fed7aa; }} .status.positive {{ color:var(--green); background:var(--green-soft); border:1px solid #bfe8ce; }} .status.negative {{ color:var(--red); background:var(--red-soft); border:1px solid #fecaca; }}
+    .bet-grid {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }}
+    .bet-column {{ min-width:0; padding:10px 9px; border:1px solid var(--soft-line); border-radius:8px; background:#fbfcfe; }} .bet-column.selected {{ background:var(--blue-soft); border-color:#bfdbfe; }} .bet-column.hit {{ background:var(--green-soft); border-color:#bfe8ce; }}
+    .bet-label {{ display:flex; align-items:center; gap:6px; color:var(--muted); font-size:12px; line-height:1.2; margin-bottom:6px; }} .bet-team {{ color:var(--text); font-size:13px; font-weight:800; line-height:1.2; min-height:16px; margin-bottom:6px; overflow-wrap:anywhere; }} .marker {{ display:inline-grid; place-items:center; flex:0 0 22px; width:22px; height:22px; border-radius:999px; color:#fff; background:var(--blue); font-size:12px; font-weight:900; }} .amount {{ font-size:18px; line-height:1.1; font-weight:850; white-space:nowrap; }} .sp {{ margin-top:5px; color:var(--muted); font-size:13px; font-weight:700; }}
+    .model-details {{ margin-top:12px; border-top:1px solid var(--soft-line); padding-top:10px; }} .model-details summary {{ cursor:pointer; color:var(--blue); font-size:13px; font-weight:800; list-style-position:inside; }} .detail-grid {{ display:grid; gap:8px; margin-top:10px; }} .detail-row {{ display:grid; grid-template-columns:78px repeat(3,minmax(0,1fr)); gap:6px; align-items:center; font-size:12px; }} .detail-label {{ color:var(--muted); font-weight:700; }} .detail-value {{ padding:6px; border-radius:6px; background:#f8fafc; text-align:right; white-space:nowrap; }} .detail-value b {{ display:block; color:var(--muted); font-size:10px; font-weight:700; text-align:left; margin-bottom:2px; }} .positive {{ color:var(--green); }} .negative {{ color:var(--red); }}
+    .empty,.template-box {{ padding:20px; border:1px dashed var(--line); border-radius:8px; color:var(--muted); background:rgba(255,255,255,.65); }} .template-box summary {{ cursor:pointer; color:var(--blue); font-size:13px; font-weight:800; }} .template-list {{ margin-top:10px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }} .template-row {{ padding:9px 10px; border:1px solid var(--soft-line); border-radius:8px; background:#fff; color:var(--muted); font-size:12px; line-height:1.45; }} .template-row strong {{ display:block; color:var(--text); font-size:13px; margin-top:2px; overflow-wrap:anywhere; }}
+    .disclaimer {{ margin-top:28px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; line-height:1.7; }}
+    @media (max-width:860px) {{ .summary {{ grid-template-columns:1fr 1fr; }} .summary-item.pnl {{ grid-column:1/-1; }} }} @media (max-width:760px) {{ main {{ width:min(100% - 20px,980px); }} .topbar {{ grid-template-columns:1fr; }} .github-link {{ justify-self:start; }} .card-grid {{ grid-template-columns:1fr; }} .template-list {{ grid-template-columns:1fr; }} }} @media (max-width:460px) {{ .summary {{ grid-template-columns:1fr; }} .bet-grid {{ grid-template-columns:1fr; }} .detail-row {{ grid-template-columns:1fr; }} .detail-value {{ text-align:left; }} }}
   </style>
 </head>
 <body>
@@ -798,17 +555,15 @@ def render_html(review: Mapping[str, object]) -> str:
     <header class="topbar">
       <div>
         <h1>中国体彩 SP 世界杯预测</h1>
-        <p class="subtitle">基于独立模型概率 + 中国体彩胜平负 SP 的复盘页面；每场固定模拟 100 元并按模型概率拆分，不构成投注建议</p>
+        <p class="subtitle">基于独立模型概率 + 中国体彩胜平负 SP 的复盘页面；默认 edge-flat：只有正 edge 过阈值才模拟下注，不构成投注建议</p>
       </div>
       <a class="github-link" href="{REPO_URL}">GitHub</a>
     </header>
 
     <section class="summary" aria-label="复盘汇总">
+      <div class="summary-item pnl {pnl_class}"><span>累计盈亏</span><strong>{_fmt_signed_currency(summary['cumulative_pnl'])}</strong><div class="summary-note">{roi_text}<br>已下注结算 {summary.get('staked_settled_count', 0)} / 已结算 {summary.get('settled_count', 0)}</div></div>
       <div class="summary-item"><span>今日预测</span><strong>{summary.get('today_pending_count', summary.get('pending_count', 0))}</strong></div>
-      <div class="summary-item profit">
-        <span>今日模拟投入</span>
-        <strong>{_fmt_currency(summary.get('today_stake_total', 0))}</strong>
-      </div>
+      <div class="summary-item"><span>今日实际下注</span><strong>{_fmt_currency(summary.get('today_stake_total', 0))}</strong></div>
       <div class="summary-item"><span>完赛待补赛果</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
       <div class="summary-item"><span>已结算复盘</span><strong>{summary['settled_count']}</strong></div>
       <div class="summary-item"><span>未来赛程</span><strong>{summary.get('future_count', 0)}</strong></div>
@@ -816,54 +571,38 @@ def render_html(review: Mapping[str, object]) -> str:
 
     <div class="diagnosis">
       复盘说明：模型先独立给出 90 分钟主胜/平局/客胜概率，SP 只在预测之后用于比较、edge 和盈亏复盘。
-      中国体彩胜平负按 90 分钟含伤停补时结算，不含加时赛和点球；淘汰赛 90 分钟打平时 actual 应填 D。
-      当前版本每场完整 SP 比赛固定模拟 100 元，并按模型概率拆分到三项；缺少 SP 或缺少赛果时不结算盈亏。
-      历史复盘只使用已确认的 90 分钟 H/D/A 赛果，避免用少量未核实样本反向调参造成过拟合。
+      默认策略是 edge-flat：edge = probability × SP - 1，只有最佳 edge 超过阈值才下注；没有正 edge 则观望。
+      这避免把每场 100 元强制拆到三项导致的结构性亏损，也避免用 15 场小样本反向调参造成过拟合。
     </div>
 
     <section>
-      <div class="section-heading">
-        <h2>今日预测 {len(today_pending)}</h2>
-        <span>date = today 且 actual 为空；未开赛、正在踢、已完赛但未录入 90 分钟比分都在这里</span>
-      </div>
+      <div class="section-heading"><h2>今日预测 {len(today_pending)}</h2><span>date = today 且 actual 为空；只有过阈值的正 edge 会产生今日实际下注</span></div>
       {_render_card_grid(today_pending, empty_text="今日暂无已录入 SP 的待结算比赛。")}
     </section>
 
     <section>
-      <div class="section-heading">
-        <h2>完赛待补赛果 {len(awaiting_result)}</h2>
-        <span>date &lt; today 且 90 分钟 actual 尚未填写；补 H/D/A 后进入历史复盘并结算盈亏</span>
-      </div>
-      {_render_card_grid(awaiting_result, empty_text="暂无完赛待补赛果比赛。")}
-    </section>
-
-    <section>
-      <div class="section-heading">
-        <h2>历史复盘 {len(settled)}</h2>
-        <span>{_html_escape(history_subtitle)}</span>
-      </div>
+      <div class="section-heading"><h2>历史复盘 {len(settled)}</h2><span>{_html_escape(history_subtitle)}</span></div>
       {_render_card_grid(settled, empty_text="暂无已结算比赛。")}
     </section>
 
     <section>
-      <div class="section-heading">
-        <h2>未来赛程 {len(future_pending)}</h2>
-        <span>date &gt; today 且 actual 为空；默认折叠，不计入今日模拟投入</span>
-      </div>
+      <div class="section-heading"><h2>完赛待补赛果 {len(awaiting_result)}</h2><span>date &lt; today 且 90 分钟 actual 尚未填写；补 H/D/A 后进入历史复盘并结算盈亏</span></div>
+      {_render_card_grid(awaiting_result, empty_text="暂无完赛待补赛果比赛。")}
+    </section>
+
+    <section>
+      <div class="section-heading"><h2>未来赛程 {len(future_pending)}</h2><span>date &gt; today 且 actual 为空；默认折叠，不计入今日实际下注</span></div>
       {_render_collapsed_card_section(future_pending, empty_text="暂无已录入 SP 的未来赛程。", summary_text=f"展开查看 {len(future_pending)} 场未来赛程")}
     </section>
 
     <section>
-      <div class="section-heading">
-        <h2>待录入赛程模板 {len(template_pending)}</h2>
-        <span>未抓到或未录入 SP 的赛程统一折叠；公开 SP 行进入预测区</span>
-      </div>
+      <div class="section-heading"><h2>待录入赛程模板 {len(template_pending)}</h2><span>未抓到或未录入 SP 的赛程统一折叠；公开 SP 行进入预测区</span></div>
       {_render_template_section(template_pending)}
     </section>
 
     <footer class="disclaimer">
       本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 可由用户手动录入，也可从公开展示页导入后复核；空白 SP 表示待录入。
-      actual 必须使用 90 分钟含伤停补时、不含加时赛和点球的赛果。公开导入数据不是自动投注接口，也不是模型输入。SP 和市场赔率只用于预测后的比较与复盘，不作为模型输入。
+      actual 必须使用 90 分钟含伤停补时、不含加时赛和点球的赛果。SP 和市场赔率只用于预测后的比较与复盘，不作为模型输入。
       模型概率不是保证，历史盈亏不能证明长期存在 edge。
     </footer>
   </main>
@@ -873,7 +612,6 @@ def render_html(review: Mapping[str, object]) -> str:
 
 
 def write_html(review: Mapping[str, object], output_path: str | Path) -> Path:
-    """Write the static HTML review page and return its path."""
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     html_text = "\n".join(line.rstrip() for line in render_html(review).splitlines()) + "\n"
@@ -882,13 +620,13 @@ def write_html(review: Mapping[str, object], output_path: str | Path) -> Path:
 
 
 def _parse_row(raw: Mapping[str, str], line_no: int) -> dict:
-    date = (raw.get("date") or "").strip()
+    date_text = (raw.get("date") or "").strip()
     home = (raw.get("home") or "").strip()
     away = (raw.get("away") or "").strip()
-    if not date:
+    if not date_text:
         raise ValueError(f"line {line_no}: date is required")
     return {
-        "date": date,
+        "date": date_text,
         "stage": (raw.get("stage") or DEFAULT_STAGE).strip() or DEFAULT_STAGE,
         "home": home,
         "away": away,
@@ -1017,19 +755,8 @@ def _fmt_alloc_triplet(values: Mapping[str, int]) -> str:
     return "/".join(f"{int(values[outcome]):,}" for outcome in OUTCOMES)
 
 
-def _edge_hint(edge: Mapping[str, float | None]) -> str:
-    if any(edge[outcome] is None for outcome in OUTCOMES):
-        return "待录入SP"
-    best = max(OUTCOMES, key=lambda outcome: float(edge[outcome]))
-    label = OUTCOME_LABELS[best]
-    if float(edge[best]) > 0:
-        return f"正 edge：{label} {_fmt_edge(edge[best])}"
-    return f"无正 edge，最佳 {label} {_fmt_edge(edge[best])}"
-
-
 def _display_width(value: str) -> int:
     import unicodedata
-
     width = 0
     for char in value:
         width += 2 if unicodedata.east_asian_width(char) in {"F", "W"} else 1
@@ -1038,10 +765,6 @@ def _display_width(value: str) -> int:
 
 def _pad(value: str, width: int) -> str:
     return value + " " * (width - _display_width(value))
-
-
-def _negative_class(value: float | None) -> str:
-    return "negative" if value is not None and float(value) < 0 else ""
 
 
 def _value_class(value: float | None) -> str:
@@ -1090,22 +813,13 @@ def _match_date(match: Mapping[str, object]) -> date | None:
         return None
 
 
+def _should_show_pending_card(match: Mapping[str, object]) -> bool:
+    return match.get("status") == "pending" and not bool(match.get("unresolved")) and bool(match.get("has_any_sp"))
+
+
 def _should_await_result(match: Mapping[str, object], review_date: date) -> bool:
     match_date = _match_date(match)
-    return (
-        _should_show_pending_card(match)
-        and match_date is not None
-        and match_date < review_date
-    )
-
-
-def _should_show_pending_card(match: Mapping[str, object]) -> bool:
-    """Return True when a pending match has SP data worth reviewing."""
-    return (
-        match.get("status") == "pending"
-        and not bool(match.get("unresolved"))
-        and bool(match.get("has_any_sp"))
-    )
+    return _should_show_pending_card(match) and match_date is not None and match_date < review_date
 
 
 def _is_today_pending(match: Mapping[str, object], review_date: date) -> bool:
@@ -1115,20 +829,15 @@ def _is_today_pending(match: Mapping[str, object], review_date: date) -> bool:
 
 def _is_future_pending(match: Mapping[str, object], review_date: date) -> bool:
     match_date = _match_date(match)
-    return (
-        _should_show_pending_card(match)
-        and match_date is not None
-        and match_date > review_date
-    )
+    return _should_show_pending_card(match) and match_date is not None and match_date > review_date
 
 
 def _main_display_matches(review: Mapping[str, object]) -> list[Mapping[str, object]]:
-    """Matches that deserve the main console/web review surface."""
     matches = list(review.get("matches", []))
     today_pending = list(review.get("today_pending") or review.get("display_pending") or [])
-    awaiting = list(review.get("awaiting_result") or [])
     settled = list(review.get("settled") or [m for m in matches if m.get("status") == "settled"])
-    return [*today_pending, *awaiting, *settled]
+    awaiting = list(review.get("awaiting_result") or [])
+    return [*today_pending, *settled, *awaiting]
 
 
 def _render_card_grid(matches: Iterable[Mapping[str, object]], empty_text: str) -> str:
@@ -1139,20 +848,12 @@ def _render_card_grid(matches: Iterable[Mapping[str, object]], empty_text: str) 
     return f'<div class="card-grid">{cards}</div>'
 
 
-def _render_collapsed_card_section(
-    matches: Iterable[Mapping[str, object]],
-    empty_text: str,
-    summary_text: str,
-) -> str:
+def _render_collapsed_card_section(matches: Iterable[Mapping[str, object]], empty_text: str, summary_text: str) -> str:
     matches = list(matches)
     if not matches:
         return f'<div class="empty">{_html_escape(empty_text)}</div>'
     cards = "\n".join(_render_card(match) for match in matches)
-    return f"""
-      <details class="template-box">
-        <summary>{_html_escape(summary_text)}</summary>
-        <div class="card-grid">{cards}</div>
-      </details>"""
+    return f'<details class="template-box"><summary>{_html_escape(summary_text)}</summary><div class="card-grid">{cards}</div></details>'
 
 
 def _render_template_section(matches: Iterable[Mapping[str, object]]) -> str:
@@ -1160,20 +861,11 @@ def _render_template_section(matches: Iterable[Mapping[str, object]]) -> str:
     if not matches:
         return '<div class="empty">暂无待录入模板。</div>'
     rows = "\n".join(_render_template_row(match) for match in matches)
-    return f"""
-      <details class="template-box">
-        <summary>展开查看 {len(matches)} 场待录入模板</summary>
-        <div class="template-list">{rows}</div>
-      </details>
-"""
+    return f'<details class="template-box"><summary>展开查看 {len(matches)} 场待录入模板</summary><div class="template-list">{rows}</div></details>'
 
 
 def _render_template_row(match: Mapping[str, object]) -> str:
-    return f"""
-          <div class="template-row">
-            {_html_escape(match['date'])} · {_html_escape(match['stage'])}
-            <strong>{_html_escape(_match_title(match))}</strong>
-          </div>"""
+    return f'<div class="template-row">{_html_escape(match["date"])} · {_html_escape(match["stage"])}<strong>{_html_escape(_match_title(match))}</strong></div>'
 
 
 def _render_card(match: Mapping[str, object]) -> str:
@@ -1184,18 +876,20 @@ def _render_card(match: Mapping[str, object]) -> str:
             status = '<span class="status waiting">待录入SP</span>'
         elif match.get("needs_result"):
             status = '<span class="status waiting">待赛果</span>'
+        elif int(match["stake_total"]) > 0 and match.get("is_today_pending"):
+            status = '<span class="status staked">今日已模拟下注</span>'
         elif match.get("is_today_pending"):
-            status = '<span class="status staked">今日待结算</span>'
-        elif match["stake_total"] > 0:
+            status = '<span class="status waiting">今日观望</span>'
+        elif int(match["stake_total"]) > 0:
             status = '<span class="status staked">待开奖</span>'
         else:
             status = '<span class="status waiting">观望</span>'
     else:
-        pnl = float(match["pnl"])
-        status = (
-            f'<span class="status {_value_class(pnl)}">'
-            f'实际 {match["actual_label"]} {_fmt_signed_currency(pnl)}</span>'
-        )
+        if int(match["stake_total"]) <= 0:
+            status = f'<span class="status waiting">实际 {match["actual_label"]}，观望未下注</span>'
+        else:
+            pnl = float(match["pnl"])
+            status = f'<span class="status {_value_class(pnl)}">实际 {match["actual_label"]} {_fmt_signed_currency(pnl)}</span>'
 
     return f"""
         <article class="match-card">
@@ -1224,9 +918,6 @@ def _render_bet_column(match: Mapping[str, object], outcome: str) -> str:
         classes.append("hit")
     class_attr = "" if not classes else " " + " ".join(classes)
 
-    # When SP has not been entered, this is a prediction card, not a betting
-    # review card. Show the model probability in the main three columns instead
-    # of three useless "¥0" boxes.
     if match.get("has_any_sp"):
         label = BET_LABELS[outcome]
         amount = _fmt_currency(match["allocation"][outcome])
@@ -1240,7 +931,7 @@ def _render_bet_column(match: Mapping[str, object], outcome: str) -> str:
               <div class="bet-label"><span class="marker">{OUTCOME_MARKERS[outcome]}</span>{label}</div>
               <div class="bet-team">{_html_escape(_bet_side_label(match, outcome))}</div>
               <div class="amount">{amount}</div>
-              <div class="sp">{_fmt_sp(match["sp"][outcome])}</div>
+              <div class="sp">{_fmt_sp(match['sp'][outcome])}</div>
             </div>"""
 
 
@@ -1257,17 +948,10 @@ def _render_model_details(match: Mapping[str, object]) -> str:
           </details>"""
 
 
-def _render_detail_row(
-    label: str,
-    values: Mapping[str, float | None] | None,
-    formatter: Callable[[float | None], str],
-    signed: bool = False,
-) -> str:
+def _render_detail_row(label: str, values: Mapping[str, float | None] | None, formatter: Callable[[float | None], str], signed: bool = False) -> str:
     cells = []
     for outcome in OUTCOMES:
         value = None if values is None else values[outcome]
         cls = f" {_value_class(value)}" if signed and value is not None else ""
-        cells.append(
-            f'<div class="detail-value{cls}"><b>{OUTCOME_LABELS[outcome]}</b>{formatter(value)}</div>'
-        )
+        cells.append(f'<div class="detail-value{cls}"><b>{OUTCOME_LABELS[outcome]}</b>{formatter(value)}</div>')
     return f'<div class="detail-row"><div class="detail-label">{label}</div>{"".join(cells)}</div>'
