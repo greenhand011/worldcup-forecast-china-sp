@@ -115,7 +115,7 @@ def allocate_best_edge(
 
     best = max(OUTCOMES, key=lambda outcome: float(edge[outcome]))
     if float(edge[best]) <= float(min_edge):
-        return _zero_allocation(), None, "无正edge，观望"
+        return _zero_allocation(), None, "edge未过阈值，观望"
     return {outcome: bankroll if outcome == best else 0 for outcome in OUTCOMES}, best, "模拟买入"
 
 

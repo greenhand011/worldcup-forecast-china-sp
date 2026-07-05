@@ -53,7 +53,7 @@ def test_best_edge_allocation_observes_when_edge_is_not_positive():
     )
     assert allocation == {"home": 0, "draw": 0, "away": 0}
     assert selected is None
-    assert status == "无正edge，观望"
+    assert status == "edge未过阈值，观望"
 
 
 @pytest.mark.parametrize(
