@@ -78,13 +78,26 @@ wcforecast china-sp-review
 
 `china-sp-fetch` 当前读取公开可访问的竞彩足球胜平负展示页，只导入 `nspf` 不让球胜平负三项 SP，并过滤世界杯比赛。它不会登录、不会下单、不会购买彩票；抓取到的 SP 仍建议按官方渠道复核。
 
+按日期范围回扫公开 SP：
+
+```bash
+wcforecast china-sp-fetch --start-date 2026-06-28 --end-date 2026-07-08
+```
+
+导入已核验的 90 分钟赛果：
+
+```bash
+wcforecast china-sp-import-results --results data/china_sp_results.csv
+wcforecast china-sp-review
+```
+
 `china-sp-fetch` reads publicly accessible 1X2 SP display data, imports only non-handicap `nspf` home/draw/away SP rows, and filters World Cup matches. It does not log in, place bets, or purchase lottery tickets; fetched SP values should still be checked against official channels.
 
 页面展示逻辑 / Page sections:
 
 - `未来预测`: 已有 SP、尚未到比赛日或尚未开赛的比赛。 / Upcoming matches with SP.
-- `待赛果复核`: 已到比赛日、已有赛前 SP，但 `actual` 还没填的比赛。 / Matches with SP that need final H/D/A confirmation.
-- `历史复盘`: `actual = H/D/A` 后自动结算盈亏。 / Settled review after `actual = H/D/A`.
+- `待赛果复核`: 已到比赛日、已有赛前 SP，但 90 分钟 `actual` 还没填的比赛。 / Matches with SP that need final 90-minute H/D/A confirmation.
+- `历史复盘`: `actual = H/D/A` 后自动结算盈亏；淘汰赛如果 90 分钟打平，哪怕加时或点球分出胜负，也应填 `D`。 / Settled review after `actual = H/D/A`; knockout matches tied after 90 minutes should be `D` even if extra time or penalties decide advancement.
 - 页面队名使用中文展示，模型内部仍使用英文队名识别。 / Team names are displayed in Chinese while the model still uses English identifiers internally.
 
 ## CSV 数据格式 / CSV Format
@@ -109,9 +122,18 @@ TBD,1/8决赛 第1场,TBD,TBD,true,,,,
 - `sp_home`: 中国体彩主胜 SP。 / China Sports Lottery home-win SP.
 - `sp_draw`: 中国体彩平局 SP。 / China Sports Lottery draw SP.
 - `sp_away`: 中国体彩主负/客胜 SP。 / China Sports Lottery away-win SP.
-- `actual`: `H` / `D` / `A`；未开奖留空。 / Final 90-minute result; leave blank before settlement.
+- `actual`: `H` / `D` / `A`；未开奖留空；必须是 90 分钟 + 伤停补时结果，不含加时赛和点球。 / Final 90-minute result including stoppage time, excluding extra time and penalties; leave blank before settlement.
 
 `actual = H/D/A`: `H = home win`, `D = draw`, `A = away win`.
+
+如果你要手动发给我历史复盘数据，请按下面格式给： / If you provide historical review data manually, use this format:
+
+```csv
+date,home,away,sp_home,sp_draw,sp_away,home_score_90,away_score_90,actual
+2026-07-04,Canada,Morocco,5.78,3.62,1.47,0,3,A
+```
+
+`actual` 可以留空，只要给 `home_score_90` 和 `away_score_90`，程序会自动推导 H/D/A。 / `actual` may be blank if `home_score_90` and `away_score_90` are provided.
 
 ## 方法说明 / Method
 

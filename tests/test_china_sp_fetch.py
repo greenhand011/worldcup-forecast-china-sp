@@ -77,3 +77,42 @@ def test_merge_public_sp_into_csv_prepends_fetched_rows(tmp_path):
     assert "2026-07-07,1/8决赛（公开SP）,Portugal,Spain,true,3.83,3.30,1.77," in text
     assert "2026-07-06,1/8决赛（公开SP）,Brazil,Norway,true,1.55,3.68,4.70," in text
     assert "TBD,决赛,TBD,TBD,true,,,," in text
+
+
+def test_merge_results_into_csv_uses_90_minute_score(tmp_path):
+    review_path = tmp_path / "china_sp_review.csv"
+    review_path.write_text(
+        "# template\n"
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-04,1/8决赛（公开SP）,Canada,Morocco,true,5.78,3.62,1.47,\n",
+        encoding="utf-8",
+    )
+    results_path = tmp_path / "china_sp_results.csv"
+    results_path.write_text(
+        "# 90 minute result, excluding extra time and penalties\n"
+        "date,home,away,home_score_90,away_score_90,actual\n"
+        "2026-07-04,Canada,Morocco,0,3,\n",
+        encoding="utf-8",
+    )
+    count = china_sp_fetch.merge_results_into_csv(review_path, results_path)
+    text = review_path.read_text(encoding="utf-8")
+    assert count == 1
+    assert "2026-07-04,1/8决赛（公开SP）,Canada,Morocco,true,5.78,3.62,1.47,A" in text
+
+
+def test_merge_results_into_csv_accepts_direct_actual(tmp_path):
+    review_path = tmp_path / "china_sp_review.csv"
+    review_path.write_text(
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-04,1/8决赛（公开SP）,Canada,Morocco,true,5.78,3.62,1.47,\n",
+        encoding="utf-8",
+    )
+    results_path = tmp_path / "china_sp_results.csv"
+    results_path.write_text(
+        "date,home,away,home_score_90,away_score_90,actual\n"
+        "2026-07-04,Canada,Morocco,,,D\n",
+        encoding="utf-8",
+    )
+    count = china_sp_fetch.merge_results_into_csv(review_path, results_path)
+    assert count == 1
+    assert review_path.read_text(encoding="utf-8").strip().endswith(",D")

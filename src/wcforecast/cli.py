@@ -101,7 +101,12 @@ def cmd_china_sp_review(args):
 
 
 def cmd_china_sp_fetch(args):
-    fetched = china_sp_fetch.fetch_public_sp(args.source_url)
+    if args.start_date or args.end_date:
+        if not (args.start_date and args.end_date):
+            raise SystemExit("--start-date and --end-date must be used together")
+        fetched = china_sp_fetch.fetch_public_sp_range(args.start_date, args.end_date, args.source_url)
+    else:
+        fetched = china_sp_fetch.fetch_public_sp(args.source_url)
     if not fetched:
         print("未从公开页面找到世界杯胜平负 SP。")
         return
@@ -116,6 +121,11 @@ def cmd_china_sp_fetch(args):
         return
     count = china_sp_fetch.merge_public_sp_into_csv(args.input, fetched, source_url=args.source_url)
     print(f"\n已写入 {count} 场公开 SP 到 {args.input}。")
+
+
+def cmd_china_sp_import_results(args):
+    count = china_sp_fetch.merge_results_into_csv(args.input, args.results)
+    print(f"已导入 {count} 场 90 分钟赛果到 {args.input}。")
 
 
 def main(argv=None):
@@ -155,8 +165,15 @@ def main(argv=None):
     fetch = sub.add_parser("china-sp-fetch", help="fetch public China SP rows into the review CSV")
     fetch.add_argument("--input", default="data/china_sp_review.csv")
     fetch.add_argument("--source-url", default=china_sp_fetch.DEFAULT_SOURCE_URL)
+    fetch.add_argument("--start-date", help="inclusive start date, e.g. 2026-06-28")
+    fetch.add_argument("--end-date", help="inclusive end date, e.g. 2026-07-08")
     fetch.add_argument("--dry-run", action="store_true")
     fetch.set_defaults(func=cmd_china_sp_fetch)
+
+    results = sub.add_parser("china-sp-import-results", help="import verified 90-minute H/D/A results")
+    results.add_argument("--input", default="data/china_sp_review.csv")
+    results.add_argument("--results", default="data/china_sp_results.csv")
+    results.set_defaults(func=cmd_china_sp_import_results)
 
     args = ap.parse_args(argv)
     args.func(args)

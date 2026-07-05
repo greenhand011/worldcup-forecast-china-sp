@@ -10,11 +10,13 @@ import csv
 import html
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import requests
+from requests import RequestException
 
 DEFAULT_SOURCE_URL = "https://trade.500.com/jczq/"
 
@@ -74,6 +76,7 @@ CHINESE_TEAM_MAP = {
 }
 
 CSV_FIELDS = ("date", "stage", "home", "away", "neutral", "sp_home", "sp_draw", "sp_away", "actual")
+RESULT_FIELDS = ("date", "home", "away", "home_score_90", "away_score_90", "actual")
 
 
 @dataclass(frozen=True)
@@ -105,9 +108,41 @@ class FetchedSPMatch:
 
 def fetch_public_sp(source_url: str = DEFAULT_SOURCE_URL, timeout: int = 20) -> list[FetchedSPMatch]:
     """Fetch publicly visible World Cup non-handicap 1X2 SP rows."""
-    response = requests.get(source_url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
-    response.raise_for_status()
-    return parse_public_sp_html(response.text, source_url=source_url)
+    last_error: RequestException | None = None
+    for _ in range(3):
+        try:
+            response = requests.get(source_url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
+            response.raise_for_status()
+            return parse_public_sp_html(response.text, source_url=source_url)
+        except RequestException as exc:
+            last_error = exc
+    if last_error is not None:
+        raise last_error
+    return []
+
+
+def fetch_public_sp_range(
+    start_date: str | date,
+    end_date: str | date,
+    source_url: str = DEFAULT_SOURCE_URL,
+    timeout: int = 20,
+) -> list[FetchedSPMatch]:
+    """Fetch publicly visible World Cup SP rows over an inclusive date range."""
+    start = _parse_date(start_date)
+    end = _parse_date(end_date)
+    if end < start:
+        raise ValueError("end date must be on or after start date")
+
+    rows: list[FetchedSPMatch] = []
+    current = start
+    while current <= end:
+        day_url = _url_with_date(source_url, current)
+        try:
+            rows.extend(fetch_public_sp(day_url, timeout=timeout))
+        except RequestException:
+            pass
+        current += timedelta(days=1)
+    return _dedupe_matches(rows)
 
 
 def parse_public_sp_html(page: str, source_url: str = DEFAULT_SOURCE_URL) -> list[FetchedSPMatch]:
@@ -121,8 +156,11 @@ def parse_public_sp_html(page: str, source_url: str = DEFAULT_SOURCE_URL) -> lis
             continue
         home_cn = _attr(tr, "data-homesxname")
         away_cn = _attr(tr, "data-awaysxname")
-        home = _map_team(home_cn)
-        away = _map_team(away_cn)
+        try:
+            home = _map_team(home_cn)
+            away = _map_team(away_cn)
+        except ValueError:
+            continue
         date = _attr(tr, "data-matchdate")
         rows.append(
             FetchedSPMatch(
@@ -180,6 +218,34 @@ def merge_public_sp_into_csv(
     return len(fetched_rows)
 
 
+def merge_results_into_csv(csv_path: str | Path, results_path: str | Path) -> int:
+    """Merge user-provided 90-minute results into the review CSV."""
+    csv_path = Path(csv_path)
+    results = _read_results_csv(Path(results_path))
+    if not results:
+        return 0
+
+    comments, rows = _read_review_csv(csv_path)
+    keyed = {_row_key(row): row for row in rows if _row_key(row) not in {("", "", "")}}
+    updated = 0
+    for result in results:
+        key = _row_key(result)
+        if key not in keyed:
+            continue
+        actual = result.get("actual") or _actual_from_scores(result)
+        if actual:
+            keyed[key]["actual"] = actual
+            updated += 1
+
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        for comment in comments:
+            f.write(comment.rstrip() + "\n")
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(keyed.values())
+    return updated
+
+
 def _attr(fragment: str, name: str) -> str:
     match = re.search(fr'{name}="([^"]*)"', fragment)
     return html.unescape(match.group(1)) if match else ""
@@ -199,6 +265,26 @@ def _map_team(name: str) -> str:
     if name not in CHINESE_TEAM_MAP:
         raise ValueError(f"unmapped Chinese team name from SP source: {name}")
     return CHINESE_TEAM_MAP[name]
+
+
+def _parse_date(value: str | date) -> date:
+    if isinstance(value, date):
+        return value
+    return datetime.strptime(str(value), "%Y-%m-%d").date()
+
+
+def _url_with_date(source_url: str, day: date) -> str:
+    parts = urlsplit(source_url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query["date"] = day.isoformat()
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+
+
+def _dedupe_matches(rows: Iterable[FetchedSPMatch]) -> list[FetchedSPMatch]:
+    keyed: dict[tuple[str, str, str], FetchedSPMatch] = {}
+    for row in rows:
+        keyed[(row.date, row.home, row.away)] = row
+    return list(keyed.values())
 
 
 def _stage_for_date(date_text: str) -> str:
@@ -232,6 +318,51 @@ def _read_review_csv(csv_path: Path) -> tuple[list[str], list[dict[str, str]]]:
     for row in reader:
         rows.append({field: row.get(field, "") for field in CSV_FIELDS})
     return comments, rows
+
+
+def _read_results_csv(path: Path) -> list[dict[str, str]]:
+    data_lines = [
+        line
+        for line in path.read_text(encoding="utf-8-sig").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    if not data_lines:
+        return []
+    reader = csv.DictReader(data_lines)
+    missing = [field for field in ("date", "home", "away") if field not in (reader.fieldnames or [])]
+    if missing:
+        raise ValueError(f"result CSV is missing required field(s): {', '.join(missing)}")
+    rows = []
+    for raw in reader:
+        row = {field: (raw.get(field) or "").strip() for field in RESULT_FIELDS}
+        if not any(row.values()):
+            continue
+        row["home"] = _normalize_team(row["home"])
+        row["away"] = _normalize_team(row["away"])
+        actual = row.get("actual", "").upper()
+        if actual and actual not in {"H", "D", "A"}:
+            raise ValueError(f"actual must be H/D/A or blank for {row['home']} vs {row['away']}")
+        row["actual"] = actual
+        rows.append(row)
+    return rows
+
+
+def _normalize_team(team: str) -> str:
+    return CHINESE_TEAM_MAP.get(team, team)
+
+
+def _actual_from_scores(row: dict[str, str]) -> str:
+    home_score = row.get("home_score_90", "")
+    away_score = row.get("away_score_90", "")
+    if home_score == "" or away_score == "":
+        return ""
+    home_goals = int(home_score)
+    away_goals = int(away_score)
+    if home_goals > away_goals:
+        return "H"
+    if home_goals < away_goals:
+        return "A"
+    return "D"
 
 
 def _row_key(row: dict[str, str]) -> tuple[str, str, str]:

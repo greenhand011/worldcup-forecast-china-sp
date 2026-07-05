@@ -1,0 +1,5 @@
+# 用户手动录入或核验后的 90 分钟赛果模板。
+# 重要：中国体彩竞彩足球胜平负按 90 分钟 + 伤停补时结算，不含加时赛和点球。
+# 如果淘汰赛 90 分钟打平、加时或点球分出晋级队，actual 仍然填 D。
+# 可填写 home_score_90/away_score_90 让程序自动推导 actual；也可以直接填写 actual=H/D/A。
+date,home,away,home_score_90,away_score_90,actual

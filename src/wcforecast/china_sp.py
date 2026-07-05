@@ -803,8 +803,9 @@ def render_html(review: Mapping[str, object]) -> str:
 
     <div class="diagnosis">
       复盘说明：模型先独立给出 90 分钟主胜/平局/客胜概率，SP 只在预测之后用于比较、edge 和盈亏复盘。
+      中国体彩胜平负按 90 分钟含伤停补时结算，不含加时赛和点球；淘汰赛 90 分钟打平时 actual 应填 D。
       当前版本每场完整 SP 比赛固定模拟 100 元，并按模型概率拆分到三项；缺少 SP 或缺少赛果时不结算盈亏。
-      历史复盘只使用已确认的 H/D/A 赛果，避免用少量未核实样本反向调参造成过拟合。
+      历史复盘只使用已确认的 90 分钟 H/D/A 赛果，避免用少量未核实样本反向调参造成过拟合。
     </div>
 
     <section>
@@ -818,7 +819,7 @@ def render_html(review: Mapping[str, object]) -> str:
     <section>
       <div class="section-heading">
         <h2>待赛果复核 {len(awaiting_result)}</h2>
-        <span>已到比赛日但 actual 尚未填写；补 H/D/A 后进入历史复盘并结算盈亏</span>
+        <span>已到比赛日但 90 分钟 actual 尚未填写；补 H/D/A 后进入历史复盘并结算盈亏</span>
       </div>
       {_render_card_grid(awaiting_result, empty_text="暂无待赛果复核比赛。")}
     </section>
@@ -826,7 +827,7 @@ def render_html(review: Mapping[str, object]) -> str:
     <section>
       <div class="section-heading">
         <h2>历史复盘 {len(settled)}</h2>
-        <span>actual = H / D / A 的比赛</span>
+        <span>actual = 90 分钟 H / D / A 的比赛</span>
       </div>
       {_render_card_grid(settled, empty_text="暂无已结算比赛。")}
     </section>
@@ -841,7 +842,7 @@ def render_html(review: Mapping[str, object]) -> str:
 
     <footer class="disclaimer">
       本页面仅用于模型复盘和学习，不构成投注建议。中国体彩 SP 可由用户手动录入，也可从公开展示页导入后复核；空白 SP 表示待录入。
-      公开导入数据不是自动投注接口，也不是模型输入。SP 和市场赔率只用于预测后的比较与复盘，不作为模型输入。
+      actual 必须使用 90 分钟含伤停补时、不含加时赛和点球的赛果。公开导入数据不是自动投注接口，也不是模型输入。SP 和市场赔率只用于预测后的比较与复盘，不作为模型输入。
       模型概率不是保证，历史盈亏不能证明长期存在 edge。
     </footer>
   </main>
