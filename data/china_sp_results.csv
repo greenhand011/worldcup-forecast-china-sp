@@ -1,8 +1,4 @@
-# 用户手动录入或核验后的 90 分钟赛果模板。
-# 重要：中国体彩竞彩足球胜平负按 90 分钟 + 伤停补时结算，不含加时赛和点球。
-# 如果淘汰赛 90 分钟打平、加时或点球分出晋级队，actual 仍然填 D。
-# 可填写 home_score_90/away_score_90 让程序自动推导 actual；也可以直接填写 actual=H/D/A。
-date,home,away,home_score_90,away_score_90,actual
+﻿# 鐢ㄦ埛鎵嬪姩褰曞叆鎴栨牳楠屽悗鐨?90 鍒嗛挓璧涙灉妯℃澘銆?# 閲嶈锛氫腑鍥戒綋褰╃珵褰╄冻鐞冭儨骞宠礋鎸?90 鍒嗛挓 + 浼ゅ仠琛ユ椂缁撶畻锛屼笉鍚姞鏃惰禌鍜岀偣鐞冦€?# 濡傛灉娣樻卑璧?90 鍒嗛挓鎵撳钩銆佸姞鏃舵垨鐐圭悆鍒嗗嚭鏅嬬骇闃燂紝actual 浠嶇劧濉?D銆?# 鍙～鍐?home_score_90/away_score_90 璁╃▼搴忚嚜鍔ㄦ帹瀵?actual锛涗篃鍙互鐩存帴濉啓 actual=H/D/A銆?date,home,away,home_score_90,away_score_90,actual
 2026-06-29,South Africa,Canada,0,1,A
 2026-06-30,Brazil,Japan,2,1,H
 2026-06-30,Germany,Paraguay,1,1,D
@@ -18,7 +14,5 @@ date,home,away,home_score_90,away_score_90,actual
 2026-07-04,Australia,Egypt,1,1,D
 2026-07-04,Colombia,Ghana,1,0,H
 2026-07-05,Canada,Morocco,0,3,A
-# Germany vs Paraguay：最终 Paraguay 点球晋级，但 90 分钟是 1-1，所以 actual = D。
-# Netherlands vs Morocco：最终 Morocco 点球晋级，但 90 分钟是 1-1，所以 actual = D。
-# Belgium vs Senegal：最终 Belgium 加时 3-2，但 90 分钟是 2-2，所以 actual = D。
-# Australia vs Egypt：最终 Egypt 点球晋级，但 90 分钟是 1-1，所以 actual = D。
+# Germany vs Paraguay锛氭渶缁?Paraguay 鐐圭悆鏅嬬骇锛屼絾 90 鍒嗛挓鏄?1-1锛屾墍浠?actual = D銆?# Netherlands vs Morocco锛氭渶缁?Morocco 鐐圭悆鏅嬬骇锛屼絾 90 鍒嗛挓鏄?1-1锛屾墍浠?actual = D銆?# Belgium vs Senegal锛氭渶缁?Belgium 鍔犳椂 3-2锛屼絾 90 鍒嗛挓鏄?2-2锛屾墍浠?actual = D銆?# Australia vs Egypt锛氭渶缁?Egypt 鐐圭悆鏅嬬骇锛屼絾 90 鍒嗛挓鏄?1-1锛屾墍浠?actual = D銆?
+2026-07-06,Brazil,Norway,0,2,A
