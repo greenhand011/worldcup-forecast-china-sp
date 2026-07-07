@@ -629,7 +629,7 @@ def format_console_table(review: Mapping[str, object]) -> str:
         f"预测区实际下注 {_fmt_console_currency(summary.get('prediction_stake_total', 0))}，"
         f"已下注结算 {summary.get('staked_settled_count', 0)}/{summary.get('settled_count', 0)}，"
         f"完赛待补赛果 {summary.get('awaiting_result_count', 0)} 场，"
-        f"后续已录入 SP {summary.get('future_count', 0)} 场，"
+        f"未来待录入赛程 {summary.get('template_count', 0)} 场，"
         f"累计盈亏 {_fmt_console_currency(summary['cumulative_pnl'])}"
     )
     return _console_safe("\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer]))
@@ -661,6 +661,7 @@ def render_html(review: Mapping[str, object]) -> str:
     roi_text = "ROI —" if roi is None else f"ROI {_fmt_pct(float(roi))}"
     prediction_title = _prediction_title(review)
     prediction_note = _prediction_note(review)
+    future_sp_section = _render_future_sp_section(future_pending)
 
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -726,7 +727,7 @@ def render_html(review: Mapping[str, object]) -> str:
       <div class="summary-item"><span>预测区实际下注</span><strong>{_fmt_currency(summary.get('prediction_stake_total', summary.get('today_stake_total', 0)))}</strong></div>
       <div class="summary-item"><span>完赛待补赛果</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
       <div class="summary-item"><span>已结算复盘</span><strong>{summary['settled_count']}</strong></div>
-      <div class="summary-item"><span>后续已录入 SP</span><strong>{summary.get('future_count', 0)}</strong></div>
+      <div class="summary-item"><span>未来待录入赛程</span><strong>{summary.get('template_count', 0)}</strong></div>
     </section>
 
     <div class="diagnosis">
@@ -755,13 +756,10 @@ def render_html(review: Mapping[str, object]) -> str:
       {_render_card_grid(awaiting_result, empty_text="暂无完赛待补赛果比赛。")}
     </section>
 
-    <section>
-      <div class="section-heading"><h2>后续已录入 SP 赛程 {len(future_pending)}</h2><span>顶部只展示最近一个可预测比赛日；更晚且已录入 SP 的比赛进入这里，默认折叠</span></div>
-      {_render_collapsed_card_section(future_pending, empty_text="暂无后续已录入 SP 的赛程；未录入 SP 或日期待定的比赛在下方模板区。", summary_text=f"展开查看 {len(future_pending)} 场后续已录入 SP 赛程")}
-    </section>
+    {future_sp_section}
 
     <section>
-      <div class="section-heading"><h2>未来赛程模板（待录入 SP/日期） {len(template_pending)}</h2><span>未抓到 SP、日期 TBD 或对阵 TBD 的赛程统一折叠；录入公开 SP 后才会进入预测区或后续已录入 SP 区。</span></div>
+      <div class="section-heading"><h2>未来赛程（待录入 SP/日期） {len(template_pending)}</h2><span>这些是尚未抓到公开 SP、日期 TBD 或对阵 TBD 的未来赛程；录入公开 SP 后，会自动进入顶部预测区或后续已录入 SP 区。</span></div>
       {_render_template_section(template_pending)}
     </section>
 
@@ -1058,12 +1056,29 @@ def _render_collapsed_card_section(matches: Iterable[Mapping[str, object]], empt
     return f'<details class="template-box"><summary>{_html_escape(summary_text)}</summary><div class="card-grid">{cards}</div></details>'
 
 
+def _render_future_sp_section(matches: Iterable[Mapping[str, object]]) -> str:
+    matches = list(matches)
+    if not matches:
+        return ""
+    cards = _render_collapsed_card_section(
+        matches,
+        empty_text="",
+        summary_text=f"展开查看 {len(matches)} 场后续已录入 SP 赛程",
+    )
+    return f"""
+    <section>
+      <div class="section-heading"><h2>后续已录入 SP 赛程 {len(matches)}</h2><span>顶部只展示最近一个可预测比赛日；更晚且已录入 SP 的比赛进入这里，默认折叠</span></div>
+      {cards}
+    </section>
+"""
+
+
 def _render_template_section(matches: Iterable[Mapping[str, object]]) -> str:
     matches = list(matches)
     if not matches:
         return '<div class="empty">暂无待录入模板。</div>'
     rows = "\n".join(_render_template_row(match) for match in matches)
-    return f'<details class="template-box"><summary>展开查看 {len(matches)} 场待录入 SP/日期的未来赛程模板</summary><div class="template-list">{rows}</div></details>'
+    return f'<details class="template-box"><summary>展开查看 {len(matches)} 场待录入 SP/日期的未来赛程</summary><div class="template-list">{rows}</div></details>'
 
 
 def _render_strategy_comparison(comparison: Sequence[Mapping[str, object]], active: str) -> str:

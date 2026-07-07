@@ -145,6 +145,7 @@ def test_build_review_uses_next_sp_day_when_today_has_no_prediction(tmp_path):
     html = china_sp.render_html(review)
     assert "下一比赛日预测：2026-07-07 2" in html
     assert html.index("下一比赛日预测：2026-07-07") < html.index("<h2>后续已录入 SP 赛程 1")
+    assert "<h2>后续已录入 SP 赛程 1" in html
     assert "展开查看 1 场后续已录入 SP 赛程" in html
 
 
@@ -165,10 +166,11 @@ def test_next_prediction_day_does_not_imply_no_future_schedule(tmp_path):
     assert len(review["future_pending"]) == 0
     assert len(review["template_pending"]) > 0
     assert "未来赛程 0" not in html
-    assert "后续已录入 SP 赛程 0" in html
-    assert "未来赛程模板（待录入 SP/日期）" in html
-    assert f"未来赛程模板（待录入 SP/日期） {len(review['template_pending'])}" in html
-    assert "展开查看 2 场待录入 SP/日期的未来赛程模板" in html
+    assert "<h2>后续已录入 SP 赛程 0" not in html
+    assert "未来待录入赛程" in html
+    assert "未来赛程（待录入 SP/日期）" in html
+    assert f"未来赛程（待录入 SP/日期） {len(review['template_pending'])}" in html
+    assert "展开查看 2 场待录入 SP/日期的未来赛程" in html
     assert "预测区已模拟下注" in html
 
 
@@ -246,5 +248,5 @@ def test_tbd_fixture_stays_in_folded_template_section(tmp_path):
     )
     review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-01")
     html = china_sp.render_html(review)
-    assert "未来赛程模板（待录入 SP/日期） 1" in html
-    assert "展开查看 1 场待录入 SP/日期的未来赛程模板" in html
+    assert "未来赛程（待录入 SP/日期） 1" in html
+    assert "展开查看 1 场待录入 SP/日期的未来赛程" in html
