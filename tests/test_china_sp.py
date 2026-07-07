@@ -125,6 +125,28 @@ def test_build_review_splits_today_history_awaiting_future(tmp_path):
     assert review["summary"]["staked_settled_count"] == 1
 
 
+def test_build_review_uses_next_sp_day_when_today_has_no_prediction(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-04,过往赛,Brazil,Norway,true,2.40,3.00,4.00,\n"
+        "2026-07-07,下一比赛日,Brazil,Norway,true,2.40,3.00,4.00,\n"
+        "2026-07-07,下一比赛日,Mexico,England,true,2.40,3.00,4.00,\n"
+        "2026-07-08,未来赛,Brazil,Norway,true,2.40,3.00,4.00,\n"
+        "2026-07-05,历史赛,Brazil,Norway,true,2.40,3.00,4.00,H\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-06")
+    assert review["current_prediction_date"] == "2026-07-07"
+    assert [m["date"] for m in review["prediction_pending"]] == ["2026-07-07", "2026-07-07"]
+    assert [m["date"] for m in review["future_pending"]] == ["2026-07-08"]
+    assert [m["date"] for m in review["awaiting_result"]] == ["2026-07-04"]
+    assert review["summary"]["prediction_stake_total"] == 200
+    html = china_sp.render_html(review)
+    assert "下一比赛日预测：2026-07-07 2" in html
+    assert html.index("下一比赛日预测：2026-07-07") < html.index("<h2>未来赛程 1")
+
+
 def test_strategy_comparison_summarizes_review_layer_only(tmp_path):
     path = tmp_path / "china_sp_review.csv"
     path.write_text(
@@ -184,7 +206,7 @@ def test_render_html_has_new_summary_and_section_order():
     assert "累计盈亏" in html
     assert "策略对比" in html
     assert "favorite-flat" in html
-    assert "今日实际下注" in html
+    assert "预测区实际下注" in html
     assert "盈利下注率" in html
     assert html.index("<h2>历史复盘") < html.index("<h2>完赛待补赛果")
 

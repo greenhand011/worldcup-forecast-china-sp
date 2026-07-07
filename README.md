@@ -125,10 +125,10 @@ wcforecast china-sp-review --strategy kelly --min-edge 0.05 --kelly-fraction 0.2
 
 页面展示逻辑 / Page sections:
 
-- `今日预测`: `date == today` 且 `actual` 为空的比赛；未开赛、正在踢、已完赛但未录入 90 分钟比分都在这里，也只有这些比赛计入“今日实际下注”。 / Matches where `date == today` and `actual` is blank; only these count toward today's actual simulated stake.
+- `今日预测 / 下一比赛日预测`: 从 `actual` 为空、`date >= today` 且已有公开 SP 的比赛里，取日期最早的一天作为顶部预测区；如果这天不是今天，标题显示“下一比赛日预测：YYYY-MM-DD”。 / The top prediction section uses the nearest future-or-today date with blank `actual`, `date >= today`, and public SP. If it is not today, the title shows the next match date.
 - `完赛待补赛果`: `date < today` 且 `actual` 为空的比赛；只表示缺少已核验的 90 分钟 H/D/A。 / Past matches without verified 90-minute H/D/A results.
 - `历史复盘`: `actual = H/D/A` 后自动结算盈亏、命中率和 ROI；淘汰赛如果 90 分钟打平，哪怕加时或点球分出胜负，也应填 `D`。 / Settled review after `actual = H/D/A`; knockout matches tied after 90 minutes should be `D` even if extra time or penalties decide advancement.
-- `未来赛程`: `date > today` 且 `actual` 为空的比赛；默认折叠，不计入今日实际下注、完赛待补或历史复盘。 / Future matches are folded by default and excluded from today/history stats.
+- `未来赛程`: 只有晚于顶部预测区日期的未结算公开 SP 比赛才进入这里；默认折叠，不计入预测区实际下注、完赛待补或历史复盘。 / Only dates after the top prediction date are folded into future schedule and excluded from prediction/history stats.
 - 页面队名使用中文展示，模型内部仍使用英文队名识别。 / Team names are displayed in Chinese while the model still uses English identifiers internally.
 
 ## CSV 数据格式 / CSV Format

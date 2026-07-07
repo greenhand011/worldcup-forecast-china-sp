@@ -520,12 +520,21 @@ def build_review(
     )
     settled = sorted([m for m in matches if m["status"] == "settled"], key=lambda m: _match_date(m) or date.min, reverse=True)
     raw_pending = [m for m in matches if m["status"] == "pending"]
-    today_pending = sorted([m for m in raw_pending if _is_today_pending(m, review_date)], key=lambda m: _match_date(m) or date.min, reverse=True)
+    current_prediction_date = _current_prediction_date(raw_pending, review_date)
+    prediction_pending = [
+        m
+        for m in raw_pending
+        if current_prediction_date is not None and _match_date(m) == current_prediction_date
+        and _should_show_pending_card(m)
+    ]
     awaiting_result = sorted([m for m in raw_pending if _should_await_result(m, review_date)], key=lambda m: _match_date(m) or date.min, reverse=True)
-    future_pending = sorted([m for m in raw_pending if _is_future_pending(m, review_date)], key=lambda m: _match_date(m) or date.max)
+    future_pending = sorted(
+        [m for m in raw_pending if _is_future_pending(m, current_prediction_date, review_date)],
+        key=lambda m: _match_date(m) or date.max,
+    )
     template_pending = [
         m for m in raw_pending
-        if m not in today_pending and m not in awaiting_result and m not in future_pending
+        if m not in prediction_pending and m not in awaiting_result and m not in future_pending
     ]
     staked_settled = [m for m in settled if int(m["stake_total"]) > 0]
     profitable = [m for m in staked_settled if float(m["pnl"]) > 0]
@@ -533,11 +542,12 @@ def build_review(
     history_stake_total = sum(float(m["stake_total"]) for m in staked_settled)
     hit_rate = (len(profitable) / len(staked_settled)) if staked_settled else None
     roi = (cumulative_pnl / history_stake_total) if history_stake_total else None
-    today_stake_total = sum(int(m["stake_total"]) for m in today_pending)
+    prediction_stake_total = sum(int(m["stake_total"]) for m in prediction_pending)
     for match in matches:
         match["needs_result"] = _should_await_result(match, review_date)
         match["is_today_pending"] = _is_today_pending(match, review_date)
-        match["is_future_pending"] = _is_future_pending(match, review_date)
+        match["is_prediction_pending"] = match in prediction_pending
+        match["is_future_pending"] = _is_future_pending(match, current_prediction_date, review_date)
     strategy_comparison = build_strategy_comparison(
         rows,
         model,
@@ -556,9 +566,14 @@ def build_review(
         "strategy": strategy,
         "kelly_fraction": float(kelly_fraction),
         "max_stake_fraction": float(max_stake_fraction),
+        "review_date": review_date.isoformat(),
+        "current_prediction_date": (
+            None if current_prediction_date is None else current_prediction_date.isoformat()
+        ),
         "matches": matches,
-        "today_pending": today_pending,
-        "display_pending": today_pending,
+        "today_pending": prediction_pending,
+        "display_pending": prediction_pending,
+        "prediction_pending": prediction_pending,
         "awaiting_result": awaiting_result,
         "future_pending": future_pending,
         "template_pending": template_pending,
@@ -567,9 +582,11 @@ def build_review(
         "summary": {
             "cumulative_pnl": cumulative_pnl,
             "settled_count": len(settled),
-            "pending_count": len(today_pending),
-            "today_pending_count": len(today_pending),
-            "today_stake_total": today_stake_total,
+            "pending_count": len(prediction_pending),
+            "today_pending_count": len(prediction_pending),
+            "prediction_count": len(prediction_pending),
+            "today_stake_total": prediction_stake_total,
+            "prediction_stake_total": prediction_stake_total,
             "awaiting_result_count": len(awaiting_result),
             "future_count": len(future_pending),
             "raw_pending_count": len(raw_pending),
@@ -605,10 +622,11 @@ def format_console_table(review: Mapping[str, object]) -> str:
     sep = "  ".join("-" * widths[i] for i in range(len(headers)))
     body = ["  ".join(_pad(str(row[i]), widths[i]) for i in range(len(headers))) for row in rows]
     summary = review["summary"]
+    prediction_title = _prediction_title(review)
     footer = (
         f"合计：策略 {review.get('strategy', 'favorite-flat')}，"
-        f"今日预测 {summary.get('today_pending_count', 0)} 场，"
-        f"今日实际下注 {_fmt_console_currency(summary.get('today_stake_total', 0))}，"
+        f"{prediction_title} {summary.get('prediction_count', summary.get('today_pending_count', 0))} 场，"
+        f"预测区实际下注 {_fmt_console_currency(summary.get('prediction_stake_total', 0))}，"
         f"已下注结算 {summary.get('staked_settled_count', 0)}/{summary.get('settled_count', 0)}，"
         f"完赛待补赛果 {summary.get('awaiting_result_count', 0)} 场，"
         f"未来赛程 {summary.get('future_count', 0)} 场，"
@@ -619,7 +637,10 @@ def format_console_table(review: Mapping[str, object]) -> str:
 
 def render_html(review: Mapping[str, object]) -> str:
     matches = list(review["matches"])
-    today_pending = list(review.get("today_pending") or review.get("display_pending") or [])
+    prediction_pending = list(
+        review.get("prediction_pending") or review.get("today_pending")
+        or review.get("display_pending") or []
+    )
     awaiting_result = sorted(list(review.get("awaiting_result") or []), key=lambda m: _match_date(m) or date.min, reverse=True)
     future_pending = sorted(list(review.get("future_pending") or []), key=lambda m: _match_date(m) or date.max)
     template_pending = list(review.get("template_pending") or [m for m in matches if m["status"] == "pending" and not _should_show_pending_card(m)])
@@ -638,6 +659,8 @@ def render_html(review: Mapping[str, object]) -> str:
     history_subtitle = "；".join(history_stats)
     pnl_class = "positive" if float(summary["cumulative_pnl"]) >= 0 else "negative"
     roi_text = "ROI —" if roi is None else f"ROI {_fmt_pct(float(roi))}"
+    prediction_title = _prediction_title(review)
+    prediction_note = _prediction_note(review)
 
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -699,8 +722,8 @@ def render_html(review: Mapping[str, object]) -> str:
 
     <section class="summary" aria-label="复盘汇总">
       <div class="summary-item pnl {pnl_class}"><span>累计盈亏</span><strong>{_fmt_signed_currency(summary['cumulative_pnl'])}</strong><div class="summary-note">{roi_text}<br>已下注结算 {summary.get('staked_settled_count', 0)} / 已结算 {summary.get('settled_count', 0)}</div></div>
-      <div class="summary-item"><span>今日预测</span><strong>{summary.get('today_pending_count', summary.get('pending_count', 0))}</strong></div>
-      <div class="summary-item"><span>今日实际下注</span><strong>{_fmt_currency(summary.get('today_stake_total', 0))}</strong></div>
+      <div class="summary-item"><span>预测区比赛</span><strong>{summary.get('prediction_count', summary.get('pending_count', 0))}</strong></div>
+      <div class="summary-item"><span>预测区实际下注</span><strong>{_fmt_currency(summary.get('prediction_stake_total', summary.get('today_stake_total', 0)))}</strong></div>
       <div class="summary-item"><span>完赛待补赛果</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
       <div class="summary-item"><span>已结算复盘</span><strong>{summary['settled_count']}</strong></div>
       <div class="summary-item"><span>未来赛程</span><strong>{summary.get('future_count', 0)}</strong></div>
@@ -718,8 +741,8 @@ def render_html(review: Mapping[str, object]) -> str:
     </section>
 
     <section>
-      <div class="section-heading"><h2>今日预测 {len(today_pending)}</h2><span>date = today 且 actual 为空；每场完整 SP 默认买入模型第一选择</span></div>
-      {_render_card_grid(today_pending, empty_text="今日暂无已录入 SP 的待结算比赛。")}
+      <div class="section-heading"><h2>{_html_escape(prediction_title)} {len(prediction_pending)}</h2><span>{_html_escape(prediction_note)}</span></div>
+      {_render_card_grid(prediction_pending, empty_text="暂无已录入 SP 的待结算比赛。")}
     </section>
 
     <section>
@@ -733,7 +756,7 @@ def render_html(review: Mapping[str, object]) -> str:
     </section>
 
     <section>
-      <div class="section-heading"><h2>未来赛程 {len(future_pending)}</h2><span>date &gt; today 且 actual 为空；默认折叠，不计入今日实际下注</span></div>
+      <div class="section-heading"><h2>未来赛程 {len(future_pending)}</h2><span>顶部只展示最近一个可预测比赛日；后续日期才进入未来赛程，默认折叠</span></div>
       {_render_collapsed_card_section(future_pending, empty_text="暂无已录入 SP 的未来赛程。", summary_text=f"展开查看 {len(future_pending)} 场未来赛程")}
     </section>
 
@@ -948,11 +971,42 @@ def _parse_review_date(value: str | date | None) -> date:
     return date.fromisoformat(str(value))
 
 
+def _prediction_title(review: Mapping[str, object]) -> str:
+    prediction_date_text = review.get("current_prediction_date")
+    review_date_text = review.get("review_date")
+    if not prediction_date_text:
+        return "今日预测"
+    if prediction_date_text == review_date_text:
+        return "今日预测"
+    return f"下一比赛日预测：{prediction_date_text}"
+
+
+def _prediction_note(review: Mapping[str, object]) -> str:
+    prediction_date_text = review.get("current_prediction_date")
+    if not prediction_date_text:
+        return "展示最近一个有公开 SP 且尚未结算的可预测比赛日。"
+    return (
+        f"顶部展示最近一个可预测比赛日 {prediction_date_text}；"
+        "后续日期进入未来赛程，每场完整 SP 默认买入模型第一选择。"
+    )
+
+
 def _match_date(match: Mapping[str, object]) -> date | None:
     try:
         return date.fromisoformat(str(match.get("date", "")))
     except ValueError:
         return None
+
+
+def _current_prediction_date(matches: Sequence[Mapping[str, object]], review_date: date) -> date | None:
+    dates = [
+        match_date
+        for match in matches
+        if _should_show_pending_card(match)
+        for match_date in [_match_date(match)]
+        if match_date is not None and match_date >= review_date
+    ]
+    return min(dates) if dates else None
 
 
 def _should_show_pending_card(match: Mapping[str, object]) -> bool:
@@ -969,9 +1023,14 @@ def _is_today_pending(match: Mapping[str, object], review_date: date) -> bool:
     return _should_show_pending_card(match) and match_date == review_date
 
 
-def _is_future_pending(match: Mapping[str, object], review_date: date) -> bool:
+def _is_future_pending(
+    match: Mapping[str, object],
+    current_prediction_date: date | None,
+    review_date: date,
+) -> bool:
     match_date = _match_date(match)
-    return _should_show_pending_card(match) and match_date is not None and match_date > review_date
+    threshold = current_prediction_date or review_date
+    return _should_show_pending_card(match) and match_date is not None and match_date > threshold
 
 
 def _main_display_matches(review: Mapping[str, object]) -> list[Mapping[str, object]]:
