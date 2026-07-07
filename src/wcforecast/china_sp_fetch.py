@@ -82,7 +82,7 @@ TEAM_ALIASES = {
     "U.S.": "United States",
 }
 
-CSV_FIELDS = ("date", "stage", "home", "away", "neutral", "sp_home", "sp_draw", "sp_away", "actual")
+CSV_FIELDS = ("date", "match_id", "stage", "home", "away", "neutral", "sp_home", "sp_draw", "sp_away", "actual")
 RESULT_FIELDS = ("date", "home", "away", "home_score_90", "away_score_90", "actual")
 
 
@@ -102,6 +102,7 @@ class FetchedSPMatch:
     def to_csv_row(self) -> dict[str, str]:
         return {
             "date": self.date,
+            "match_id": "",
             "stage": self.stage,
             "home": self.home,
             "away": self.away,

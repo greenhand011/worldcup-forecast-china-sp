@@ -27,6 +27,14 @@
     .comparison-table tr:last-child td { border-bottom:0; }
     .comparison-table th { color:var(--muted); background:#f8fafc; font-size:12px; font-weight:800; }
     .comparison-table .active-strategy td:first-child { color:var(--blue); font-weight:900; }
+    .bracket-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .bracket-stage { border:1px solid var(--line); border-radius:8px; background:var(--card); box-shadow:var(--shadow); padding:14px; }
+    .bracket-stage h3 { margin:0 0 10px; font-size:16px; }
+    .bracket-list { display:grid; gap:8px; }
+    .bracket-row { padding:10px; border:1px solid var(--soft-line); border-radius:8px; background:#fbfcfe; }
+    .bracket-meta { display:flex; justify-content:space-between; gap:8px; color:var(--muted); font-size:12px; font-weight:800; margin-bottom:5px; }
+    .bracket-title { font-weight:900; line-height:1.3; overflow-wrap:anywhere; }
+    .bracket-status { margin-top:5px; color:var(--muted); font-size:12px; }
     .section-heading { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:24px 0 12px; }
     .section-heading h2 { margin:0; font-size:20px; } .section-heading span { color:var(--muted); font-size:13px; }
     .card-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
@@ -43,7 +51,7 @@
     .model-details { margin-top:12px; border-top:1px solid var(--soft-line); padding-top:10px; } .model-details summary { cursor:pointer; color:var(--blue); font-size:13px; font-weight:800; list-style-position:inside; } .detail-grid { display:grid; gap:8px; margin-top:10px; } .detail-row { display:grid; grid-template-columns:78px repeat(3,minmax(0,1fr)); gap:6px; align-items:center; font-size:12px; } .detail-label { color:var(--muted); font-weight:700; } .detail-value { padding:6px; border-radius:6px; background:#f8fafc; text-align:right; white-space:nowrap; } .detail-value b { display:block; color:var(--muted); font-size:10px; font-weight:700; text-align:left; margin-bottom:2px; } .positive { color:var(--green); } .negative { color:var(--red); }
     .empty,.template-box { padding:20px; border:1px dashed var(--line); border-radius:8px; color:var(--muted); background:rgba(255,255,255,.65); } .template-box summary { cursor:pointer; color:var(--blue); font-size:13px; font-weight:800; } .template-list { margin-top:10px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } .template-row { padding:9px 10px; border:1px solid var(--soft-line); border-radius:8px; background:#fff; color:var(--muted); font-size:12px; line-height:1.45; } .template-row strong { display:block; color:var(--text); font-size:13px; margin-top:2px; overflow-wrap:anywhere; }
     .disclaimer { margin-top:28px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; line-height:1.7; }
-    @media (max-width:860px) { .summary { grid-template-columns:1fr 1fr; } .summary-item.pnl { grid-column:1/-1; } } @media (max-width:760px) { main { width:min(100% - 20px,980px); } .topbar { grid-template-columns:1fr; } .github-link { justify-self:start; } .card-grid { grid-template-columns:1fr; } .template-list { grid-template-columns:1fr; } } @media (max-width:460px) { .summary { grid-template-columns:1fr; } .bet-grid { grid-template-columns:1fr; } .detail-row { grid-template-columns:1fr; } .detail-value { text-align:left; } }
+    @media (max-width:860px) { .summary { grid-template-columns:1fr 1fr; } .summary-item.pnl { grid-column:1/-1; } } @media (max-width:760px) { main { width:min(100% - 20px,980px); } .topbar { grid-template-columns:1fr; } .github-link { justify-self:start; } .card-grid,.bracket-grid { grid-template-columns:1fr; } .template-list { grid-template-columns:1fr; } } @media (max-width:460px) { .summary { grid-template-columns:1fr; } .bet-grid { grid-template-columns:1fr; } .detail-row { grid-template-columns:1fr; } .detail-value { text-align:left; } }
   </style>
 </head>
 <body>
@@ -62,7 +70,7 @@
       <div class="summary-item"><span>预测区实际下注</span><strong>¥200</strong></div>
       <div class="summary-item"><span>完赛待补赛果</span><strong>0</strong></div>
       <div class="summary-item"><span>已结算复盘</span><strong>19</strong></div>
-      <div class="summary-item"><span>未来待录入赛程</span><strong>104</strong></div>
+      <div class="summary-item"><span>未来待录入赛程</span><strong>95</strong></div>
     </section>
 
     <div class="diagnosis">
@@ -229,6 +237,122 @@
           </details>
         </article>
 </div>
+    </section>
+
+    <section>
+      <div class="section-heading"><h2>淘汰赛路径 / Bracket</h2><span>晋级方来自 data/china_sp_advancement.csv；90 分钟 actual 只用于体彩胜平负结算</span></div>
+      <div class="bracket-grid">
+        <div class="bracket-stage">
+          <h3>1/8 决赛</h3>
+          <div class="bracket-list">
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>R16-1</span><span>2026-07-05 · 已录入SP</span></div>
+              <div class="bracket-title">加拿大 vs 摩洛哥</div>
+              <div class="bracket-status">晋级：摩洛哥 · 晋级 摩洛哥</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>R16-2</span><span>2026-07-06 · 已录入SP</span></div>
+              <div class="bracket-title">巴西 vs 挪威</div>
+              <div class="bracket-status">晋级：挪威 · 晋级 挪威</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>R16-3</span><span>2026-07-06 · 已录入SP</span></div>
+              <div class="bracket-title">墨西哥 vs 英格兰</div>
+              <div class="bracket-status">晋级：英格兰 · 晋级 英格兰</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>R16-4</span><span>2026-07-07 · 已录入SP</span></div>
+              <div class="bracket-title">葡萄牙 vs 西班牙</div>
+              <div class="bracket-status">晋级：西班牙 · 晋级 西班牙</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>R16-5</span><span>2026-07-07 · 已录入SP</span></div>
+              <div class="bracket-title">美国 vs 比利时</div>
+              <div class="bracket-status">晋级：比利时 · 晋级 比利时</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>R16-6</span><span>2026-07-08 · 已录入SP</span></div>
+              <div class="bracket-title">阿根廷 vs 埃及</div>
+              <div class="bracket-status">待赛果</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>R16-7</span><span>2026-07-08 · 已录入SP</span></div>
+              <div class="bracket-title">瑞士 vs 哥伦比亚</div>
+              <div class="bracket-status">待赛果</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>R16-8</span><span>TBD · 待SP</span></div>
+              <div class="bracket-title">待定 vs 待定</div>
+              <div class="bracket-status">待录入SP/日期</div>
+            </div></div>
+        </div>
+
+        <div class="bracket-stage">
+          <h3>1/4 决赛</h3>
+          <div class="bracket-list">
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>QF-1</span><span>TBD · 待SP</span></div>
+              <div class="bracket-title">摩洛哥 vs 挪威</div>
+              <div class="bracket-status">待录入SP/日期</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>QF-2</span><span>TBD · 待SP</span></div>
+              <div class="bracket-title">英格兰 vs 西班牙</div>
+              <div class="bracket-status">待录入SP/日期</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>QF-3</span><span>TBD · 待SP</span></div>
+              <div class="bracket-title">比利时 vs 胜者 R16-6</div>
+              <div class="bracket-status">待录入SP/日期</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>QF-4</span><span>TBD · 待SP</span></div>
+              <div class="bracket-title">胜者 R16-7 vs 胜者 R16-8</div>
+              <div class="bracket-status">待录入SP/日期</div>
+            </div></div>
+        </div>
+
+        <div class="bracket-stage">
+          <h3>半决赛</h3>
+          <div class="bracket-list">
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>SF-1</span><span>TBD · 待SP</span></div>
+              <div class="bracket-title">胜者 QF-1 vs 胜者 QF-2</div>
+              <div class="bracket-status">待录入SP/日期</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>SF-2</span><span>TBD · 待SP</span></div>
+              <div class="bracket-title">胜者 QF-3 vs 胜者 QF-4</div>
+              <div class="bracket-status">待录入SP/日期</div>
+            </div></div>
+        </div>
+
+        <div class="bracket-stage">
+          <h3>三四名 / 决赛</h3>
+          <div class="bracket-list">
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>THIRD</span><span>TBD · 待SP</span></div>
+              <div class="bracket-title">负者 SF-1 vs 负者 SF-2</div>
+              <div class="bracket-status">待录入SP/日期</div>
+            </div>
+
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>FINAL</span><span>TBD · 待SP</span></div>
+              <div class="bracket-title">胜者 SF-1 vs 胜者 SF-2</div>
+              <div class="bracket-status">待录入SP/日期</div>
+            </div></div>
+        </div></div>
     </section>
 
     <section>
@@ -1079,8 +1203,8 @@
 
 
     <section>
-      <div class="section-heading"><h2>未来赛程（待录入 SP/日期） 104</h2><span>这些是尚未抓到公开 SP、日期 TBD 或对阵 TBD 的未来赛程；录入公开 SP 后，会自动进入顶部预测区或后续已录入 SP 区。</span></div>
-      <details class="template-box"><summary>展开查看 104 场待录入 SP/日期的未来赛程</summary><div class="template-list"><div class="template-row">TBD · 小组赛 A组 第1轮<strong>墨西哥 vs 南非</strong></div>
+      <div class="section-heading"><h2>未来赛程（待录入 SP/日期） 95</h2><span>这些是尚未抓到公开 SP、日期 TBD 或对阵 TBD 的未来赛程；录入公开 SP 后，会自动进入顶部预测区或后续已录入 SP 区。</span></div>
+      <details class="template-box"><summary>展开查看 95 场待录入 SP/日期的未来赛程</summary><div class="template-list"><div class="template-row">TBD · 小组赛 A组 第1轮<strong>墨西哥 vs 南非</strong></div>
 <div class="template-row">TBD · 小组赛 A组 第1轮<strong>韩国 vs 捷克</strong></div>
 <div class="template-row">TBD · 小组赛 A组 第2轮<strong>墨西哥 vs 韩国</strong></div>
 <div class="template-row">TBD · 小组赛 A组 第2轮<strong>南非 vs 捷克</strong></div>
@@ -1174,16 +1298,7 @@
 <div class="template-row">TBD · 1/8决赛 第4场<strong>待定 vs 待定</strong></div>
 <div class="template-row">TBD · 1/8决赛 第5场<strong>待定 vs 待定</strong></div>
 <div class="template-row">TBD · 1/8决赛 第6场<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 1/8决赛 第7场<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 1/8决赛 第8场<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 1/4决赛 第1场<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 1/4决赛 第2场<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 1/4决赛 第3场<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 1/4决赛 第4场<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 半决赛 第1场<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 半决赛 第2场<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 三四名决赛<strong>待定 vs 待定</strong></div>
-<div class="template-row">TBD · 决赛<strong>待定 vs 待定</strong></div></div></details>
+<div class="template-row">TBD · 1/8决赛 第7场<strong>待定 vs 待定</strong></div></div></details>
     </section>
 
     <footer class="disclaimer">

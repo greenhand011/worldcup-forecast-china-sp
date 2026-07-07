@@ -170,8 +170,55 @@ def test_next_prediction_day_does_not_imply_no_future_schedule(tmp_path):
     assert "未来待录入赛程" in html
     assert "未来赛程（待录入 SP/日期）" in html
     assert f"未来赛程（待录入 SP/日期） {len(review['template_pending'])}" in html
-    assert "展开查看 2 场待录入 SP/日期的未来赛程" in html
+    assert "展开查看 1 场待录入 SP/日期的未来赛程" in html
     assert "预测区已模拟下注" in html
+
+
+def test_bracket_uses_explicit_advancement_for_quarterfinals(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,match_id,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-03,R16-1,1/8决赛,Brazil,Norway,true,2.40,3.00,4.00,D\n"
+        "2026-07-03,R16-2,1/8决赛,Mexico,England,true,2.40,3.00,4.00,A\n"
+        "TBD,QF-1,1/4决赛 第1场,TBD,TBD,true,,,,\n",
+        encoding="utf-8",
+    )
+    advancement = tmp_path / "china_sp_advancement.csv"
+    advancement.write_text(
+        "match_id,qualified_team\n"
+        "R16-1,Brazil\n"
+        "R16-2,England\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(
+        path,
+        FakeModel(),
+        advancement_path=advancement,
+        calibrator=identity,
+        today="2026-07-04",
+    )
+    qf = review["bracket"][1]["matches"][0]
+    assert qf["match_id"] == "QF-1"
+    assert qf["title"] == "巴西 vs 英格兰"
+    assert all(match["match_id"] != "QF-1" for match in review["template_pending"])
+
+
+def test_bracket_does_not_infer_advancement_from_actual_draw(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,match_id,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-03,R16-1,1/8决赛,Brazil,Norway,true,2.40,3.00,4.00,D\n"
+        "2026-07-03,R16-2,1/8决赛,Mexico,England,true,2.40,3.00,4.00,A\n"
+        "TBD,QF-1,1/4决赛 第1场,TBD,TBD,true,,,,\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-04")
+    qf = review["bracket"][1]["matches"][0]
+    html = china_sp.render_html(review)
+    assert qf["title"] == "胜者 R16-1 vs 胜者 R16-2"
+    assert "巴西 vs 英格兰" not in qf["title"]
+    assert "1/4 决赛" in html
+    assert "胜者 R16-1" in html
 
 
 def test_strategy_comparison_summarizes_review_layer_only(tmp_path):

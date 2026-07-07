@@ -1,0 +1,9 @@
+# Knockout advancement data is independent from China Sports Lottery H/D/A settlement.
+# actual in data/china_sp_review.csv remains 90-minute home/draw/away only.
+# If a knockout match is 90-minute draw, record the extra-time/penalty qualified team here.
+match_id,qualified_team
+R16-1,Morocco
+R16-2,Norway
+R16-3,England
+R16-4,Spain
+R16-5,Belgium

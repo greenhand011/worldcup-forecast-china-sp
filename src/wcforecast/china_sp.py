@@ -20,7 +20,8 @@ from . import predict
 from .teams import INDEX
 
 CSV_FIELDS = ("date", "home", "away", "neutral", "sp_home", "sp_draw", "sp_away", "actual")
-OPTIONAL_FIELDS = ("stage",)
+OPTIONAL_FIELDS = ("stage", "match_id")
+ADVANCEMENT_FIELDS = ("match_id", "qualified_team")
 OUTCOMES = ("home", "draw", "away")
 OUTCOME_LABELS = {"home": "主胜", "draw": "平局", "away": "客胜"}
 BET_LABELS = {"home": "主胜下注", "draw": "平局下注", "away": "客胜下注"}
@@ -32,6 +33,26 @@ TBD_NAMES = {"", "TBD", "待定", "待定球队", "未定", "To be decided"}
 REPO_URL = "https://github.com/greenhand011/worldcup-forecast-china-sp"
 STRATEGIES = {"favorite-flat", "edge-flat", "prob-split", "kelly"}
 COMPARISON_STRATEGIES = ("favorite-flat", "prob-split", "edge-flat", "kelly")
+BRACKET_MATCH_IDS = (
+    "R16-1", "R16-2", "R16-3", "R16-4", "R16-5", "R16-6", "R16-7", "R16-8",
+    "QF-1", "QF-2", "QF-3", "QF-4", "SF-1", "SF-2", "THIRD", "FINAL",
+)
+BRACKET_SECTIONS = (
+    ("1/8 决赛", ("R16-1", "R16-2", "R16-3", "R16-4", "R16-5", "R16-6", "R16-7", "R16-8")),
+    ("1/4 决赛", ("QF-1", "QF-2", "QF-3", "QF-4")),
+    ("半决赛", ("SF-1", "SF-2")),
+    ("三四名 / 决赛", ("THIRD", "FINAL")),
+)
+BRACKET_SOURCES = {
+    "QF-1": (("winner", "R16-1"), ("winner", "R16-2")),
+    "QF-2": (("winner", "R16-3"), ("winner", "R16-4")),
+    "QF-3": (("winner", "R16-5"), ("winner", "R16-6")),
+    "QF-4": (("winner", "R16-7"), ("winner", "R16-8")),
+    "SF-1": (("winner", "QF-1"), ("winner", "QF-2")),
+    "SF-2": (("winner", "QF-3"), ("winner", "QF-4")),
+    "FINAL": (("winner", "SF-1"), ("winner", "SF-2")),
+    "THIRD": (("loser", "SF-1"), ("loser", "SF-2")),
+}
 
 TEAM_ZH = {
     "Algeria": "阿尔及利亚",
@@ -112,6 +133,45 @@ def read_china_sp_csv(path: str | Path) -> list[dict]:
             continue
         rows.append(_parse_row(raw, line_no))
     return rows
+
+
+def read_advancement_csv(path: str | Path, rows: Sequence[Mapping[str, object]] = ()) -> dict[str, str]:
+    """Read knockout advancement data independent from 90-minute H/D/A actuals."""
+    path = Path(path)
+    if not path.exists():
+        return {}
+
+    with path.open("r", encoding="utf-8-sig", newline="") as f:
+        lines = [line for line in f if line.strip() and not line.lstrip().startswith("#")]
+    if not lines:
+        return {}
+
+    reader = csv.DictReader(lines)
+    fieldnames = set(reader.fieldnames or [])
+    if "match_id" not in fieldnames:
+        raise ValueError("advancement CSV is missing required field: match_id")
+    if "qualified_team" not in fieldnames and "qualified" not in fieldnames:
+        raise ValueError("advancement CSV needs qualified_team or qualified")
+
+    row_by_id = {str(row.get("match_id", "")).strip(): row for row in rows if row.get("match_id")}
+    advancements: dict[str, str] = {}
+    for line_no, raw in enumerate(reader, start=2):
+        match_id = (raw.get("match_id") or "").strip()
+        if not match_id:
+            continue
+        qualified_team = (raw.get("qualified_team") or "").strip()
+        qualified_side = (raw.get("qualified") or "").strip().lower()
+        if not qualified_team and qualified_side in {"home", "away"}:
+            source_row = row_by_id.get(match_id)
+            if source_row is None:
+                raise ValueError(f"line {line_no}: qualified={qualified_side} needs a matching row")
+            qualified_team = str(source_row[qualified_side]).strip()
+        if not qualified_team:
+            continue
+        if qualified_team not in INDEX:
+            raise ValueError(f"line {line_no}: unknown qualified_team: {qualified_team}")
+        advancements[match_id] = qualified_team
+    return advancements
 
 
 def allocate_bankroll(
@@ -384,6 +444,7 @@ def review_match(
 
     return {
         "date": str(row["date"]).strip(),
+        "match_id": str(row.get("match_id") or "").strip(),
         "stage": str(row.get("stage") or DEFAULT_STAGE).strip() or DEFAULT_STAGE,
         "home": home or "TBD",
         "away": away or "TBD",
@@ -492,6 +553,106 @@ def _summarize_strategy(strategy: str, matches: Sequence[Mapping[str, object]]) 
     }
 
 
+def build_bracket(
+    matches: Sequence[Mapping[str, object]],
+    advancements: Mapping[str, str],
+) -> list[dict]:
+    """Build a display-only knockout bracket from explicit advancement data."""
+    match_by_id = {
+        str(match.get("match_id", "")).strip(): match
+        for match in matches
+        if str(match.get("match_id", "")).strip()
+    }
+    sections = []
+    for stage_title, match_ids in BRACKET_SECTIONS:
+        items = []
+        for match_id in match_ids:
+            existing = match_by_id.get(match_id)
+            home, away = _bracket_participants(match_id, match_by_id, advancements)
+            qualified = advancements.get(match_id)
+            items.append({
+                "match_id": match_id,
+                "stage": stage_title,
+                "home": home,
+                "away": away,
+                "title": f"{home} vs {away}",
+                "date": "" if existing is None else str(existing.get("date", "")),
+                "actual_label": "" if existing is None else str(existing.get("actual_label", "")),
+                "has_sp": False if existing is None else bool(existing.get("has_complete_sp")),
+                "status": _bracket_status(existing, qualified),
+                "qualified": None if qualified is None else _team_zh(qualified),
+            })
+        sections.append({"title": stage_title, "matches": items})
+    return sections
+
+
+def _bracket_participants(
+    match_id: str,
+    match_by_id: Mapping[str, Mapping[str, object]],
+    advancements: Mapping[str, str],
+) -> tuple[str, str]:
+    existing = match_by_id.get(match_id)
+    if existing is not None and not bool(existing.get("unresolved")):
+        return str(existing.get("home_zh")), str(existing.get("away_zh"))
+
+    sources = BRACKET_SOURCES.get(match_id)
+    if sources is None:
+        if existing is None:
+            return f"胜者 {match_id}", f"胜者 {match_id}"
+        return _bracket_team_or_label(existing, "home", "待定"), _bracket_team_or_label(
+            existing,
+            "away",
+            "待定",
+        )
+    return tuple(_resolve_bracket_source(source, match_by_id, advancements) for source in sources)
+
+
+def _resolve_bracket_source(
+    source: tuple[str, str],
+    match_by_id: Mapping[str, Mapping[str, object]],
+    advancements: Mapping[str, str],
+) -> str:
+    kind, source_id = source
+    if kind == "winner":
+        team = advancements.get(source_id)
+        return _team_zh(team) if team else f"胜者 {source_id}"
+    if kind == "loser":
+        loser = _loser_team(source_id, match_by_id, advancements)
+        return _team_zh(loser) if loser else f"负者 {source_id}"
+    raise ValueError(f"unknown bracket source kind: {kind}")
+
+
+def _loser_team(
+    match_id: str,
+    match_by_id: Mapping[str, Mapping[str, object]],
+    advancements: Mapping[str, str],
+) -> str | None:
+    winner = advancements.get(match_id)
+    match = match_by_id.get(match_id)
+    if winner is None or match is None or bool(match.get("unresolved")):
+        return None
+    teams = [str(match.get("home")), str(match.get("away"))]
+    losers = [team for team in teams if team and team != winner and not _is_tbd(team)]
+    return losers[0] if losers else None
+
+
+def _bracket_team_or_label(match: Mapping[str, object], side: str, fallback: str) -> str:
+    team = str(match.get(side, "")).strip()
+    return fallback if _is_tbd(team) else _team_zh(team)
+
+
+def _bracket_status(match: Mapping[str, object] | None, qualified: str | None) -> str:
+    if qualified is not None:
+        return f"晋级：{_team_zh(qualified)}"
+    if match is None:
+        return "待晋级链路"
+    if match.get("status") == "settled":
+        return "晋级待录入"
+    if match.get("has_complete_sp"):
+        return "待赛果"
+    return "待录入SP/日期"
+
+
 def build_review(
     input_path: str | Path,
     model,
@@ -502,11 +663,14 @@ def build_review(
     kelly_fraction: float = 0.25,
     max_stake_fraction: float = 1.0,
     today: str | date | None = None,
+    advancement_path: str | Path | None = None,
     calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
 ) -> dict:
     """Build a structured China SP review for CLI and HTML rendering."""
     review_date = _parse_review_date(today)
     rows = read_china_sp_csv(input_path)
+    advancement_path = Path(advancement_path) if advancement_path is not None else _default_advancement_path(input_path)
+    advancements = read_advancement_csv(advancement_path, rows)
     matches = _review_rows(
         rows,
         model,
@@ -535,7 +699,9 @@ def build_review(
     template_pending = [
         m for m in raw_pending
         if m not in prediction_pending and m not in awaiting_result and m not in future_pending
+        and not _is_later_bracket_template(m)
     ]
+    bracket = build_bracket(matches, advancements)
     staked_settled = [m for m in settled if int(m["stake_total"]) > 0]
     profitable = [m for m in staked_settled if float(m["pnl"]) > 0]
     cumulative_pnl = sum(float(m["pnl"] or 0.0) for m in settled)
@@ -560,6 +726,7 @@ def build_review(
     )
     return {
         "input": str(input_path),
+        "advancement_input": str(advancement_path),
         "bankroll": int(bankroll),
         "unit": int(unit),
         "min_edge": float(min_edge),
@@ -579,6 +746,7 @@ def build_review(
         "template_pending": template_pending,
         "settled": settled,
         "strategy_comparison": strategy_comparison,
+        "bracket": bracket,
         "summary": {
             "cumulative_pnl": cumulative_pnl,
             "settled_count": len(settled),
@@ -646,6 +814,7 @@ def render_html(review: Mapping[str, object]) -> str:
     template_pending = list(review.get("template_pending") or [m for m in matches if m["status"] == "pending" and not _should_show_pending_card(m)])
     settled = sorted(list(review.get("settled") or [m for m in matches if m["status"] == "settled"]), key=lambda m: _match_date(m) or date.min, reverse=True)
     strategy_comparison = list(review.get("strategy_comparison") or [])
+    bracket = list(review.get("bracket") or [])
     summary = review["summary"]
     hit_rate = summary.get("hit_rate")
     roi = summary.get("roi")
@@ -692,6 +861,14 @@ def render_html(review: Mapping[str, object]) -> str:
     .comparison-table tr:last-child td {{ border-bottom:0; }}
     .comparison-table th {{ color:var(--muted); background:#f8fafc; font-size:12px; font-weight:800; }}
     .comparison-table .active-strategy td:first-child {{ color:var(--blue); font-weight:900; }}
+    .bracket-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }}
+    .bracket-stage {{ border:1px solid var(--line); border-radius:8px; background:var(--card); box-shadow:var(--shadow); padding:14px; }}
+    .bracket-stage h3 {{ margin:0 0 10px; font-size:16px; }}
+    .bracket-list {{ display:grid; gap:8px; }}
+    .bracket-row {{ padding:10px; border:1px solid var(--soft-line); border-radius:8px; background:#fbfcfe; }}
+    .bracket-meta {{ display:flex; justify-content:space-between; gap:8px; color:var(--muted); font-size:12px; font-weight:800; margin-bottom:5px; }}
+    .bracket-title {{ font-weight:900; line-height:1.3; overflow-wrap:anywhere; }}
+    .bracket-status {{ margin-top:5px; color:var(--muted); font-size:12px; }}
     .section-heading {{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:24px 0 12px; }}
     .section-heading h2 {{ margin:0; font-size:20px; }} .section-heading span {{ color:var(--muted); font-size:13px; }}
     .card-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }}
@@ -708,7 +885,7 @@ def render_html(review: Mapping[str, object]) -> str:
     .model-details {{ margin-top:12px; border-top:1px solid var(--soft-line); padding-top:10px; }} .model-details summary {{ cursor:pointer; color:var(--blue); font-size:13px; font-weight:800; list-style-position:inside; }} .detail-grid {{ display:grid; gap:8px; margin-top:10px; }} .detail-row {{ display:grid; grid-template-columns:78px repeat(3,minmax(0,1fr)); gap:6px; align-items:center; font-size:12px; }} .detail-label {{ color:var(--muted); font-weight:700; }} .detail-value {{ padding:6px; border-radius:6px; background:#f8fafc; text-align:right; white-space:nowrap; }} .detail-value b {{ display:block; color:var(--muted); font-size:10px; font-weight:700; text-align:left; margin-bottom:2px; }} .positive {{ color:var(--green); }} .negative {{ color:var(--red); }}
     .empty,.template-box {{ padding:20px; border:1px dashed var(--line); border-radius:8px; color:var(--muted); background:rgba(255,255,255,.65); }} .template-box summary {{ cursor:pointer; color:var(--blue); font-size:13px; font-weight:800; }} .template-list {{ margin-top:10px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }} .template-row {{ padding:9px 10px; border:1px solid var(--soft-line); border-radius:8px; background:#fff; color:var(--muted); font-size:12px; line-height:1.45; }} .template-row strong {{ display:block; color:var(--text); font-size:13px; margin-top:2px; overflow-wrap:anywhere; }}
     .disclaimer {{ margin-top:28px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; line-height:1.7; }}
-    @media (max-width:860px) {{ .summary {{ grid-template-columns:1fr 1fr; }} .summary-item.pnl {{ grid-column:1/-1; }} }} @media (max-width:760px) {{ main {{ width:min(100% - 20px,980px); }} .topbar {{ grid-template-columns:1fr; }} .github-link {{ justify-self:start; }} .card-grid {{ grid-template-columns:1fr; }} .template-list {{ grid-template-columns:1fr; }} }} @media (max-width:460px) {{ .summary {{ grid-template-columns:1fr; }} .bet-grid {{ grid-template-columns:1fr; }} .detail-row {{ grid-template-columns:1fr; }} .detail-value {{ text-align:left; }} }}
+    @media (max-width:860px) {{ .summary {{ grid-template-columns:1fr 1fr; }} .summary-item.pnl {{ grid-column:1/-1; }} }} @media (max-width:760px) {{ main {{ width:min(100% - 20px,980px); }} .topbar {{ grid-template-columns:1fr; }} .github-link {{ justify-self:start; }} .card-grid,.bracket-grid {{ grid-template-columns:1fr; }} .template-list {{ grid-template-columns:1fr; }} }} @media (max-width:460px) {{ .summary {{ grid-template-columns:1fr; }} .bet-grid {{ grid-template-columns:1fr; }} .detail-row {{ grid-template-columns:1fr; }} .detail-value {{ text-align:left; }} }}
   </style>
 </head>
 <body>
@@ -744,6 +921,11 @@ def render_html(review: Mapping[str, object]) -> str:
     <section>
       <div class="section-heading"><h2>{_html_escape(prediction_title)} {len(prediction_pending)}</h2><span>{_html_escape(prediction_note)}</span></div>
       {_render_card_grid(prediction_pending, empty_text="暂无已录入 SP 的待结算比赛。")}
+    </section>
+
+    <section>
+      <div class="section-heading"><h2>淘汰赛路径 / Bracket</h2><span>晋级方来自 data/china_sp_advancement.csv；90 分钟 actual 只用于体彩胜平负结算</span></div>
+      {_render_bracket(bracket)}
     </section>
 
     <section>
@@ -790,6 +972,7 @@ def _parse_row(raw: Mapping[str, str], line_no: int) -> dict:
         raise ValueError(f"line {line_no}: date is required")
     return {
         "date": date_text,
+        "match_id": (raw.get("match_id") or "").strip(),
         "stage": (raw.get("stage") or DEFAULT_STAGE).strip() or DEFAULT_STAGE,
         "home": home,
         "away": away,
@@ -969,6 +1152,10 @@ def _parse_review_date(value: str | date | None) -> date:
     return date.fromisoformat(str(value))
 
 
+def _default_advancement_path(input_path: str | Path) -> Path:
+    return Path(input_path).parent / "china_sp_advancement.csv"
+
+
 def _prediction_title(review: Mapping[str, object]) -> str:
     prediction_date_text = review.get("current_prediction_date")
     review_date_text = review.get("review_date")
@@ -1010,6 +1197,19 @@ def _current_prediction_date(matches: Sequence[Mapping[str, object]], review_dat
 
 def _should_show_pending_card(match: Mapping[str, object]) -> bool:
     return match.get("status") == "pending" and not bool(match.get("unresolved")) and bool(match.get("has_any_sp"))
+
+
+def _is_later_bracket_template(match: Mapping[str, object]) -> bool:
+    match_id = str(match.get("match_id") or "").strip()
+    if match_id in BRACKET_MATCH_IDS:
+        return True
+    stage = str(match.get("stage") or "")
+    return (
+        stage.startswith("1/4决赛")
+        or stage.startswith("半决赛")
+        or stage.startswith("三四名")
+        or stage == "决赛"
+    )
 
 
 def _should_await_result(match: Mapping[str, object], review_date: date) -> bool:
@@ -1127,6 +1327,36 @@ def _render_strategy_row(row: Mapping[str, object], active: str) -> str:
               <td class="{_value_class(None if max_profit is None else float(max_profit))}">{_fmt_signed_currency(None if max_profit is None else float(max_profit))}</td>
               <td class="{_value_class(None if max_loss is None else float(max_loss))}">{_fmt_signed_currency(None if max_loss is None else float(max_loss))}</td>
             </tr>"""
+
+
+def _render_bracket(bracket: Sequence[Mapping[str, object]]) -> str:
+    if not bracket:
+        return '<div class="empty">暂无淘汰赛路径数据。</div>'
+    sections = "\n".join(_render_bracket_stage(section) for section in bracket)
+    return f'<div class="bracket-grid">{sections}</div>'
+
+
+def _render_bracket_stage(section: Mapping[str, object]) -> str:
+    matches = section.get("matches") or []
+    rows = "\n".join(_render_bracket_row(match) for match in matches)
+    return f"""
+        <div class="bracket-stage">
+          <h3>{_html_escape(section["title"])}</h3>
+          <div class="bracket-list">{rows}</div>
+        </div>"""
+
+
+def _render_bracket_row(match: Mapping[str, object]) -> str:
+    date_text = str(match.get("date") or "TBD")
+    sp_text = "已录入SP" if match.get("has_sp") else "待SP"
+    qualified = match.get("qualified")
+    qualified_text = "" if not qualified else f" · 晋级 {_html_escape(qualified)}"
+    return f"""
+            <div class="bracket-row">
+              <div class="bracket-meta"><span>{_html_escape(match["match_id"])}</span><span>{_html_escape(date_text)} · {sp_text}</span></div>
+              <div class="bracket-title">{_html_escape(match["title"])}</div>
+              <div class="bracket-status">{_html_escape(match["status"])}{qualified_text}</div>
+            </div>"""
 
 
 def _render_template_row(match: Mapping[str, object]) -> str:
