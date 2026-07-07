@@ -629,7 +629,7 @@ def format_console_table(review: Mapping[str, object]) -> str:
         f"预测区实际下注 {_fmt_console_currency(summary.get('prediction_stake_total', 0))}，"
         f"已下注结算 {summary.get('staked_settled_count', 0)}/{summary.get('settled_count', 0)}，"
         f"完赛待补赛果 {summary.get('awaiting_result_count', 0)} 场，"
-        f"未来赛程 {summary.get('future_count', 0)} 场，"
+        f"后续已录入 SP {summary.get('future_count', 0)} 场，"
         f"累计盈亏 {_fmt_console_currency(summary['cumulative_pnl'])}"
     )
     return _console_safe("\n".join(["中国体彩 SP 世界杯复盘", "", line, sep, *body, "", footer]))
@@ -726,7 +726,7 @@ def render_html(review: Mapping[str, object]) -> str:
       <div class="summary-item"><span>预测区实际下注</span><strong>{_fmt_currency(summary.get('prediction_stake_total', summary.get('today_stake_total', 0)))}</strong></div>
       <div class="summary-item"><span>完赛待补赛果</span><strong>{summary.get('awaiting_result_count', 0)}</strong></div>
       <div class="summary-item"><span>已结算复盘</span><strong>{summary['settled_count']}</strong></div>
-      <div class="summary-item"><span>未来赛程</span><strong>{summary.get('future_count', 0)}</strong></div>
+      <div class="summary-item"><span>后续已录入 SP</span><strong>{summary.get('future_count', 0)}</strong></div>
     </section>
 
     <div class="diagnosis">
@@ -756,12 +756,12 @@ def render_html(review: Mapping[str, object]) -> str:
     </section>
 
     <section>
-      <div class="section-heading"><h2>未来赛程 {len(future_pending)}</h2><span>顶部只展示最近一个可预测比赛日；后续日期才进入未来赛程，默认折叠</span></div>
-      {_render_collapsed_card_section(future_pending, empty_text="暂无已录入 SP 的未来赛程。", summary_text=f"展开查看 {len(future_pending)} 场未来赛程")}
+      <div class="section-heading"><h2>后续已录入 SP 赛程 {len(future_pending)}</h2><span>顶部只展示最近一个可预测比赛日；更晚且已录入 SP 的比赛进入这里，默认折叠</span></div>
+      {_render_collapsed_card_section(future_pending, empty_text="暂无后续已录入 SP 的赛程；未录入 SP 或日期待定的比赛在下方模板区。", summary_text=f"展开查看 {len(future_pending)} 场后续已录入 SP 赛程")}
     </section>
 
     <section>
-      <div class="section-heading"><h2>待录入赛程模板 {len(template_pending)}</h2><span>未抓到或未录入 SP 的赛程统一折叠；公开 SP 行进入预测区</span></div>
+      <div class="section-heading"><h2>未来赛程模板（待录入 SP/日期） {len(template_pending)}</h2><span>未抓到 SP、日期 TBD 或对阵 TBD 的赛程统一折叠；录入公开 SP 后才会进入预测区或后续已录入 SP 区。</span></div>
       {_render_template_section(template_pending)}
     </section>
 
@@ -987,7 +987,8 @@ def _prediction_note(review: Mapping[str, object]) -> str:
         return "展示最近一个有公开 SP 且尚未结算的可预测比赛日。"
     return (
         f"顶部展示最近一个可预测比赛日 {prediction_date_text}；"
-        "后续日期进入未来赛程，每场完整 SP 默认买入模型第一选择。"
+        "更晚且已录入 SP 的比赛进入后续已录入 SP 赛程；"
+        "未录入 SP/日期待定的比赛进入模板区。"
     )
 
 
@@ -1062,7 +1063,7 @@ def _render_template_section(matches: Iterable[Mapping[str, object]]) -> str:
     if not matches:
         return '<div class="empty">暂无待录入模板。</div>'
     rows = "\n".join(_render_template_row(match) for match in matches)
-    return f'<details class="template-box"><summary>展开查看 {len(matches)} 场待录入模板</summary><div class="template-list">{rows}</div></details>'
+    return f'<details class="template-box"><summary>展开查看 {len(matches)} 场待录入 SP/日期的未来赛程模板</summary><div class="template-list">{rows}</div></details>'
 
 
 def _render_strategy_comparison(comparison: Sequence[Mapping[str, object]], active: str) -> str:
@@ -1125,10 +1126,10 @@ def _render_card(match: Mapping[str, object]) -> str:
             status = '<span class="status waiting">待录入SP</span>'
         elif match.get("needs_result"):
             status = '<span class="status waiting">待赛果</span>'
-        elif int(match["stake_total"]) > 0 and match.get("is_today_pending"):
-            status = '<span class="status staked">今日已模拟下注</span>'
-        elif match.get("is_today_pending"):
-            status = '<span class="status waiting">今日观望</span>'
+        elif int(match["stake_total"]) > 0 and match.get("is_prediction_pending"):
+            status = '<span class="status staked">预测区已模拟下注</span>'
+        elif match.get("is_prediction_pending"):
+            status = '<span class="status waiting">预测区观望</span>'
         elif int(match["stake_total"]) > 0:
             status = '<span class="status staked">待开奖</span>'
         else:
