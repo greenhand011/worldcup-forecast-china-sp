@@ -118,6 +118,24 @@ def test_merge_results_into_csv_accepts_direct_actual(tmp_path):
     assert review_path.read_text(encoding="utf-8").strip().endswith(",D")
 
 
+def test_merge_results_derives_90_minute_draw_as_d(tmp_path):
+    review_path = tmp_path / "china_sp_review.csv"
+    review_path.write_text(
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-04,1/8决赛（公开SP）,Australia,Egypt,true,3.50,3.30,3.20,\n",
+        encoding="utf-8",
+    )
+    results_path = tmp_path / "china_sp_results.csv"
+    results_path.write_text(
+        "date,home,away,home_score_90,away_score_90,actual\n"
+        "2026-07-04,Australia,Egypt,1,1,\n",
+        encoding="utf-8",
+    )
+    count = china_sp_fetch.merge_results_into_csv(review_path, results_path)
+    assert count == 1
+    assert review_path.read_text(encoding="utf-8").strip().endswith(",D")
+
+
 def test_merge_results_normalizes_usa_alias(tmp_path):
     review_path = tmp_path / "china_sp_review.csv"
     review_path.write_text(

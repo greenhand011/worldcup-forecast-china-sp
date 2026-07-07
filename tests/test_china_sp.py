@@ -125,6 +125,22 @@ def test_build_review_splits_today_history_awaiting_future(tmp_path):
     assert review["summary"]["staked_settled_count"] == 1
 
 
+def test_strategy_comparison_summarizes_review_layer_only(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-03,历史赛,Brazil,Norway,true,2.40,3.00,4.00,H\n"
+        "2026-07-04,历史赛,Brazil,Norway,true,1.80,3.00,4.00,D\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-06")
+    comparison = {row["strategy"]: row for row in review["strategy_comparison"]}
+    assert set(comparison) == {"favorite-flat", "prob-split", "edge-flat", "kelly"}
+    assert comparison["favorite-flat"]["staked_settled_count"] == 2
+    assert comparison["favorite-flat"]["total_stake"] == pytest.approx(200.0)
+    assert comparison["edge-flat"]["staked_settled_count"] < comparison["favorite-flat"]["staked_settled_count"]
+
+
 def test_render_html_has_new_summary_and_section_order():
     review = {
         "summary": {
@@ -150,9 +166,24 @@ def test_render_html_has_new_summary_and_section_order():
         "future_pending": [],
         "settled": [review_for("D", row_overrides={"sp_home": 2.4})],
         "matches": [review_for(None, row_overrides={"sp_home": 2.4}), review_for("D", row_overrides={"sp_home": 2.4})],
+        "strategy_comparison": [
+            {
+                "strategy": "favorite-flat",
+                "settled_count": 1,
+                "staked_settled_count": 1,
+                "total_stake": 100.0,
+                "cumulative_pnl": -100.0,
+                "roi": -1.0,
+                "profitable_rate": 0.0,
+                "max_profit": -100.0,
+                "max_loss": -100.0,
+            }
+        ],
     }
     html = china_sp.render_html(review)
     assert "累计盈亏" in html
+    assert "策略对比" in html
+    assert "favorite-flat" in html
     assert "今日实际下注" in html
     assert "盈利下注率" in html
     assert html.index("<h2>历史复盘") < html.index("<h2>完赛待补赛果")

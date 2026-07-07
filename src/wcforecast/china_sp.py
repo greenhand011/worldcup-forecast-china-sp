@@ -31,6 +31,7 @@ DEFAULT_STAGE = "未标注赛段"
 TBD_NAMES = {"", "TBD", "待定", "待定球队", "未定", "To be decided"}
 REPO_URL = "https://github.com/greenhand011/worldcup-forecast-china-sp"
 STRATEGIES = {"favorite-flat", "edge-flat", "prob-split", "kelly"}
+COMPARISON_STRATEGIES = ("favorite-flat", "prob-split", "edge-flat", "kelly")
 
 TEAM_ZH = {
     "Algeria": "阿尔及利亚",
@@ -415,6 +416,82 @@ def review_match(
     }
 
 
+def _review_rows(
+    rows: Sequence[Mapping[str, object]],
+    model,
+    bankroll: int,
+    unit: int,
+    min_edge: float,
+    strategy: str,
+    kelly_fraction: float,
+    max_stake_fraction: float,
+    calibrator: Callable[[Sequence[float]], Sequence[float]],
+) -> list[dict]:
+    return [
+        review_match(
+            row,
+            model,
+            bankroll=bankroll,
+            unit=unit,
+            min_edge=min_edge,
+            strategy=strategy,
+            kelly_fraction=kelly_fraction,
+            max_stake_fraction=max_stake_fraction,
+            calibrator=calibrator,
+        )
+        for row in rows
+    ]
+
+
+def build_strategy_comparison(
+    rows: Sequence[Mapping[str, object]],
+    model,
+    strategies: Sequence[str] = COMPARISON_STRATEGIES,
+    bankroll: int = 100,
+    unit: int = 1,
+    min_edge: float = 0.05,
+    kelly_fraction: float = 0.25,
+    max_stake_fraction: float = 1.0,
+    calibrator: Callable[[Sequence[float]], Sequence[float]] = predict.calibrate,
+) -> list[dict]:
+    """Summarize settled P&L for several review-layer staking strategies."""
+    comparison = []
+    for strategy in strategies:
+        matches = _review_rows(
+            rows,
+            model,
+            bankroll=bankroll,
+            unit=unit,
+            min_edge=min_edge,
+            strategy=strategy,
+            kelly_fraction=kelly_fraction,
+            max_stake_fraction=max_stake_fraction,
+            calibrator=calibrator,
+        )
+        comparison.append(_summarize_strategy(strategy, matches))
+    return comparison
+
+
+def _summarize_strategy(strategy: str, matches: Sequence[Mapping[str, object]]) -> dict:
+    settled = [m for m in matches if m["status"] == "settled"]
+    staked_settled = [m for m in settled if int(m["stake_total"]) > 0]
+    total_stake = sum(float(m["stake_total"]) for m in staked_settled)
+    cumulative_pnl = sum(float(m["pnl"] or 0.0) for m in settled)
+    profitable = [m for m in staked_settled if float(m["pnl"] or 0.0) > 0]
+    pnl_values = [float(m["pnl"] or 0.0) for m in staked_settled]
+    return {
+        "strategy": strategy,
+        "settled_count": len(settled),
+        "staked_settled_count": len(staked_settled),
+        "total_stake": total_stake,
+        "cumulative_pnl": cumulative_pnl,
+        "roi": (cumulative_pnl / total_stake) if total_stake else None,
+        "profitable_rate": (len(profitable) / len(staked_settled)) if staked_settled else None,
+        "max_profit": max(pnl_values) if pnl_values else None,
+        "max_loss": min(pnl_values) if pnl_values else None,
+    }
+
+
 def build_review(
     input_path: str | Path,
     model,
@@ -430,20 +507,17 @@ def build_review(
     """Build a structured China SP review for CLI and HTML rendering."""
     review_date = _parse_review_date(today)
     rows = read_china_sp_csv(input_path)
-    matches = [
-        review_match(
-            row,
-            model,
-            bankroll=bankroll,
-            unit=unit,
-            min_edge=min_edge,
-            strategy=strategy,
-            kelly_fraction=kelly_fraction,
-            max_stake_fraction=max_stake_fraction,
-            calibrator=calibrator,
-        )
-        for row in rows
-    ]
+    matches = _review_rows(
+        rows,
+        model,
+        bankroll=bankroll,
+        unit=unit,
+        min_edge=min_edge,
+        strategy=strategy,
+        kelly_fraction=kelly_fraction,
+        max_stake_fraction=max_stake_fraction,
+        calibrator=calibrator,
+    )
     settled = sorted([m for m in matches if m["status"] == "settled"], key=lambda m: _match_date(m) or date.min, reverse=True)
     raw_pending = [m for m in matches if m["status"] == "pending"]
     today_pending = sorted([m for m in raw_pending if _is_today_pending(m, review_date)], key=lambda m: _match_date(m) or date.min, reverse=True)
@@ -464,6 +538,16 @@ def build_review(
         match["needs_result"] = _should_await_result(match, review_date)
         match["is_today_pending"] = _is_today_pending(match, review_date)
         match["is_future_pending"] = _is_future_pending(match, review_date)
+    strategy_comparison = build_strategy_comparison(
+        rows,
+        model,
+        bankroll=bankroll,
+        unit=unit,
+        min_edge=min_edge,
+        kelly_fraction=kelly_fraction,
+        max_stake_fraction=max_stake_fraction,
+        calibrator=calibrator,
+    )
     return {
         "input": str(input_path),
         "bankroll": int(bankroll),
@@ -479,6 +563,7 @@ def build_review(
         "future_pending": future_pending,
         "template_pending": template_pending,
         "settled": settled,
+        "strategy_comparison": strategy_comparison,
         "summary": {
             "cumulative_pnl": cumulative_pnl,
             "settled_count": len(settled),
@@ -539,6 +624,7 @@ def render_html(review: Mapping[str, object]) -> str:
     future_pending = sorted(list(review.get("future_pending") or []), key=lambda m: _match_date(m) or date.max)
     template_pending = list(review.get("template_pending") or [m for m in matches if m["status"] == "pending" and not _should_show_pending_card(m)])
     settled = sorted(list(review.get("settled") or [m for m in matches if m["status"] == "settled"]), key=lambda m: _match_date(m) or date.min, reverse=True)
+    strategy_comparison = list(review.get("strategy_comparison") or [])
     summary = review["summary"]
     hit_rate = summary.get("hit_rate")
     roi = summary.get("roi")
@@ -575,6 +661,13 @@ def render_html(review: Mapping[str, object]) -> str:
     .summary-item.pnl strong {{ font-size:32px; }} .summary-item.pnl.negative strong {{ color:var(--red); }} .summary-item.pnl.positive strong {{ color:var(--green); }}
     .summary-note {{ margin-top:8px; color:var(--muted); font-size:12px; line-height:1.45; }}
     .diagnosis {{ margin:0 0 18px; padding:12px 14px; border:1px solid #fed7aa; border-radius:8px; background:var(--amber-soft); color:#7c2d12; line-height:1.7; font-size:13px; }}
+    .comparison-wrap {{ overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--card); box-shadow:var(--shadow); }}
+    .comparison-table {{ width:100%; min-width:760px; border-collapse:collapse; font-size:13px; }}
+    .comparison-table th,.comparison-table td {{ padding:10px 12px; border-bottom:1px solid var(--soft-line); text-align:right; white-space:nowrap; }}
+    .comparison-table th:first-child,.comparison-table td:first-child {{ text-align:left; }}
+    .comparison-table tr:last-child td {{ border-bottom:0; }}
+    .comparison-table th {{ color:var(--muted); background:#f8fafc; font-size:12px; font-weight:800; }}
+    .comparison-table .active-strategy td:first-child {{ color:var(--blue); font-weight:900; }}
     .section-heading {{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin:24px 0 12px; }}
     .section-heading h2 {{ margin:0; font-size:20px; }} .section-heading span {{ color:var(--muted); font-size:13px; }}
     .card-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }}
@@ -618,6 +711,11 @@ def render_html(review: Mapping[str, object]) -> str:
       默认策略是 favorite-flat：每场完整 SP 固定用 100 元买入模型概率最高的一项；edge 仍然展示为赛后价值检查，但不让低概率高赔率冷门主导下注。
       这样既满足每场必须模拟下注，也避免把 100 元拆到三项造成结构性亏损；模型层不使用 SP，避免用小样本反向调参造成过拟合。
     </div>
+
+    <section>
+      <div class="section-heading"><h2>策略对比</h2><span>同一模型概率与 SP，只比较下注策略层；不反向训练模型</span></div>
+      {_render_strategy_comparison(strategy_comparison, str(review.get("strategy", "favorite-flat")))}
+    </section>
 
     <section>
       <div class="section-heading"><h2>今日预测 {len(today_pending)}</h2><span>date = today 且 actual 为空；每场完整 SP 默认买入模型第一选择</span></div>
@@ -906,6 +1004,54 @@ def _render_template_section(matches: Iterable[Mapping[str, object]]) -> str:
         return '<div class="empty">暂无待录入模板。</div>'
     rows = "\n".join(_render_template_row(match) for match in matches)
     return f'<details class="template-box"><summary>展开查看 {len(matches)} 场待录入模板</summary><div class="template-list">{rows}</div></details>'
+
+
+def _render_strategy_comparison(comparison: Sequence[Mapping[str, object]], active: str) -> str:
+    if not comparison:
+        return '<div class="empty">暂无策略对比数据。</div>'
+    rows = "\n".join(_render_strategy_row(row, active) for row in comparison)
+    return f"""
+      <div class="comparison-wrap">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>策略</th>
+              <th>已下注结算</th>
+              <th>总投入</th>
+              <th>累计盈亏</th>
+              <th>ROI</th>
+              <th>盈利下注率</th>
+              <th>最大盈利</th>
+              <th>最大亏损</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+      </div>
+"""
+
+
+def _render_strategy_row(row: Mapping[str, object], active: str) -> str:
+    strategy = str(row["strategy"])
+    cls = ' class="active-strategy"' if strategy == active else ""
+    roi = row.get("roi")
+    profitable_rate = row.get("profitable_rate")
+    pnl = row.get("cumulative_pnl")
+    max_profit = row.get("max_profit")
+    max_loss = row.get("max_loss")
+    return f"""
+            <tr{cls}>
+              <td>{_html_escape(strategy)}</td>
+              <td>{int(row.get("staked_settled_count", 0))} / {int(row.get("settled_count", 0))}</td>
+              <td>{_fmt_currency(float(row.get("total_stake", 0.0)))}</td>
+              <td class="{_value_class(float(pnl or 0.0))}">{_fmt_signed_currency(float(pnl or 0.0))}</td>
+              <td>{_fmt_pct(None if roi is None else float(roi))}</td>
+              <td>{_fmt_pct(None if profitable_rate is None else float(profitable_rate))}</td>
+              <td class="{_value_class(None if max_profit is None else float(max_profit))}">{_fmt_signed_currency(None if max_profit is None else float(max_profit))}</td>
+              <td class="{_value_class(None if max_loss is None else float(max_loss))}">{_fmt_signed_currency(None if max_loss is None else float(max_loss))}</td>
+            </tr>"""
 
 
 def _render_template_row(match: Mapping[str, object]) -> str:
