@@ -699,7 +699,6 @@ def build_review(
     template_pending = [
         m for m in raw_pending
         if m not in prediction_pending and m not in awaiting_result and m not in future_pending
-        and not _is_later_bracket_template(m)
     ]
     bracket = build_bracket(matches, advancements)
     staked_settled = [m for m in settled if int(m["stake_total"]) > 0]
@@ -814,7 +813,6 @@ def render_html(review: Mapping[str, object]) -> str:
     template_pending = list(review.get("template_pending") or [m for m in matches if m["status"] == "pending" and not _should_show_pending_card(m)])
     settled = sorted(list(review.get("settled") or [m for m in matches if m["status"] == "settled"]), key=lambda m: _match_date(m) or date.min, reverse=True)
     strategy_comparison = list(review.get("strategy_comparison") or [])
-    bracket = list(review.get("bracket") or [])
     summary = review["summary"]
     hit_rate = summary.get("hit_rate")
     roi = summary.get("roi")
@@ -921,11 +919,6 @@ def render_html(review: Mapping[str, object]) -> str:
     <section>
       <div class="section-heading"><h2>{_html_escape(prediction_title)} {len(prediction_pending)}</h2><span>{_html_escape(prediction_note)}</span></div>
       {_render_card_grid(prediction_pending, empty_text="暂无已录入 SP 的待结算比赛。")}
-    </section>
-
-    <section>
-      <div class="section-heading"><h2>淘汰赛路径 / Bracket</h2><span>晋级方来自 data/china_sp_advancement.csv；90 分钟 actual 只用于体彩胜平负结算</span></div>
-      {_render_bracket(bracket)}
     </section>
 
     <section>
