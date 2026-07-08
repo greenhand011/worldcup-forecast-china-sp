@@ -689,7 +689,7 @@ def build_review(
         m
         for m in raw_pending
         if current_prediction_date is not None and _match_date(m) == current_prediction_date
-        and _should_show_pending_card(m)
+        and _is_prediction_preview(m)
     ]
     awaiting_result = sorted([m for m in raw_pending if _should_await_result(m, review_date)], key=lambda m: _match_date(m) or date.min, reverse=True)
     future_pending = sorted(
@@ -918,7 +918,7 @@ def render_html(review: Mapping[str, object]) -> str:
 
     <section>
       <div class="section-heading"><h2>{_html_escape(prediction_title)} {len(prediction_pending)}</h2><span>{_html_escape(prediction_note)}</span></div>
-      {_render_card_grid(prediction_pending, empty_text="暂无已录入 SP 的待结算比赛。")}
+      {_render_card_grid(prediction_pending, empty_text="暂无已确定的待预测比赛；若赛程已确定但缺少 SP，请检查 date 是否仍为 TBD。")}
     </section>
 
     <section>
@@ -1162,11 +1162,10 @@ def _prediction_title(review: Mapping[str, object]) -> str:
 def _prediction_note(review: Mapping[str, object]) -> str:
     prediction_date_text = review.get("current_prediction_date")
     if not prediction_date_text:
-        return "展示最近一个有公开 SP 且尚未结算的可预测比赛日。"
+        return "展示最近一个尚未结算的已确定比赛日；已录入 SP 的比赛会模拟下注，未录入 SP 的比赛只显示模型概率，待 SP 录入后再进入下注复盘。"
     return (
-        f"顶部展示最近一个可预测比赛日 {prediction_date_text}；"
-        "更晚且已录入 SP 的比赛进入后续已录入 SP 赛程；"
-        "未录入 SP/日期待定的比赛进入模板区。"
+        f"顶部展示最近一个尚未结算的已确定比赛日 {prediction_date_text}；"
+        "已录入 SP 的比赛会模拟下注，未录入 SP 的比赛只显示模型概率，待 SP 录入后再进入下注复盘。"
     )
 
 
@@ -1181,11 +1180,15 @@ def _current_prediction_date(matches: Sequence[Mapping[str, object]], review_dat
     dates = [
         match_date
         for match in matches
-        if _should_show_pending_card(match)
+        if _is_prediction_preview(match)
         for match_date in [_match_date(match)]
         if match_date is not None and match_date >= review_date
     ]
     return min(dates) if dates else None
+
+
+def _is_prediction_preview(match: Mapping[str, object]) -> bool:
+    return match.get("status") == "pending" and not bool(match.get("unresolved"))
 
 
 def _should_show_pending_card(match: Mapping[str, object]) -> bool:
@@ -1360,6 +1363,8 @@ def _render_card(match: Mapping[str, object]) -> str:
     if match["status"] == "pending":
         if match["unresolved"]:
             status = '<span class="status waiting">对阵待定</span>'
+        elif match.get("is_prediction_pending") and match["stake_status"] == "待录入SP":
+            status = '<span class="status waiting">预测区待录入SP</span>'
         elif match["stake_status"] == "待录入SP":
             status = '<span class="status waiting">待录入SP</span>'
         elif match.get("needs_result"):

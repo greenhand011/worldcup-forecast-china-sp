@@ -294,6 +294,56 @@ def test_settled_r16_moves_qf_to_future_template_without_bracket_section(tmp_pat
     assert "摩洛哥 vs 挪威" not in html
 
 
+def test_dated_qf_without_sp_enters_prediction_preview_without_stake(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,match_id,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-09,QF-1,1/4决赛 第1场,France,Morocco,true,,,,\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-09")
+    assert review["current_prediction_date"] == "2026-07-09"
+    assert [match["match_id"] for match in review["prediction_pending"]] == ["QF-1"]
+    assert review["summary"]["prediction_stake_total"] == 0
+    html = china_sp.render_html(review)
+    assert "法国 vs 摩洛哥" in html
+    assert "预测区待录入SP" in html
+    assert "今日预测 0" not in html
+    assert "淘汰赛路径 / Bracket" not in html
+
+
+def test_dated_qf_with_sp_enters_prediction_and_stakes(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,match_id,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "2026-07-09,QF-1,1/4决赛（公开SP）,France,Morocco,true,1.85,3.10,4.90,\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-09")
+    assert [match["match_id"] for match in review["prediction_pending"]] == ["QF-1"]
+    assert review["summary"]["prediction_stake_total"] == 100
+    html = china_sp.render_html(review)
+    assert "法国 vs 摩洛哥" in html
+    assert "预测区已模拟下注" in html
+
+
+def test_qf_with_tbd_date_stays_out_of_prediction_preview(tmp_path):
+    path = tmp_path / "china_sp_review.csv"
+    path.write_text(
+        "date,match_id,stage,home,away,neutral,sp_home,sp_draw,sp_away,actual\n"
+        "TBD,QF-1,1/4决赛 第1场,France,Morocco,true,,,,\n",
+        encoding="utf-8",
+    )
+    review = china_sp.build_review(path, FakeModel(), calibrator=identity, today="2026-07-09")
+    assert review["current_prediction_date"] is None
+    assert not review["prediction_pending"]
+    assert any(match["match_id"] == "QF-1" for match in review["template_pending"])
+    html = china_sp.render_html(review)
+    assert "今日预测 0" in html
+    assert "法国 vs 摩洛哥" in html
+    assert "预测区待录入SP" not in html
+
+
 def test_strategy_comparison_summarizes_review_layer_only(tmp_path):
     path = tmp_path / "china_sp_review.csv"
     path.write_text(
